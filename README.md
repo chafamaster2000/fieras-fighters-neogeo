@@ -8,6 +8,8 @@ Juego de pelea 1 contra 1 para Neo Geo, al estilo de The King of Fighters. ROBOC
 
 Lo hice con IA en unas 14 horas, desde la idea hasta que se pudo jugar. De esas horas, 5,33 fueron de trabajo mío y durante 4 estuve durmiendo mientras la IA seguía.
 
+**[Jugalo en el navegador / Play it in your browser](https://chafamaster2000.github.io/fieras-fighters-neogeo/)**
+
 <!-- VIDEO -->
 
 | | |
@@ -60,6 +62,8 @@ El código se escribió con [Claude Code](https://claude.com/claude-code). El ar
 `tools/` convierte los PNG de `art/src/` a los formatos de la Neo Geo: tiles, paletas de 15 colores y animaciones.
 
 ### Jugarlo
+
+En el navegador: [chafamaster2000.github.io/fieras-fighters-neogeo](https://chafamaster2000.github.io/fieras-fighters-neogeo/), con MAME compilado a WebAssembly. Necesita teclado.
 
 Sin compilar: bajá el zip del [último Release](../../releases/latest). Trae la ROM y nullbios, un BIOS libre, así que no hace falta conseguir nada más.
 
@@ -143,6 +147,8 @@ The code was written with [Claude Code](https://claude.com/claude-code). The art
 
 ### Play it
 
+In your browser: [chafamaster2000.github.io/fieras-fighters-neogeo](https://chafamaster2000.github.io/fieras-fighters-neogeo/), running MAME compiled to WebAssembly. Needs a keyboard.
+
 No build needed: grab the zip from the [latest Release](../../releases/latest). It includes the ROM and nullbios, a free BIOS, so you don't need anything else.
 
 - Windows: unzip it inside your [MAME](https://www.mamedev.org/release.html) folder, next to `mame.exe`, and double-click `fieras-fighters\JUGAR.bat`.
@@ -173,3 +179,5 @@ make mame                      # play
 ### License
 
 The code is MIT (see [LICENSE](LICENSE)). The art, the characters and the Odaclick brand are all rights reserved.
+
+Hecho con amor desde Argentina.
