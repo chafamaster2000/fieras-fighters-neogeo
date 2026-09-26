@@ -15,6 +15,22 @@
 
 volatile game_t g;
 
+const character_t *const roster[ROSTER_N] = {&char_p1, &char_p2};
+
+// Color alternativo: rota los canales (R <- G <- B <- R). El cyan del perro
+// pasa a dorado y la lengua a azul: se distinguen en un espejo.
+const u16 *char_palette(u8 side, const character_t *ch, u8 color) {
+    static u16 alt[2][16];
+    if (!color) return ch->pal;
+    for (u8 i = 0; i < 16; i++) {
+        u16 c = ch->pal[i];
+        u16 r = (c >> 8) & 15, gg = (c >> 4) & 15, b = c & 15;
+        u16 lr = (c >> 14) & 1, lg = (c >> 13) & 1, lb = (c >> 12) & 1;
+        alt[side][i] = (c & 0x8000) | (lg << 14) | (lb << 13) | (lr << 12) | (gg << 8) | (b << 4) | r;
+    }
+    return alt[side];
+}
+
 #define USER_MODE_GAME 2
 #define ROUND_TIME     60
 #define PUSH_W         50
@@ -28,7 +44,7 @@ static u8 shake_side;
 static u16 scroll[3];
 static s16 cam_drawn;
 
-static const attack_t fireball_atk = {ANIM_FIREBALL, 12, 18, 14, 14, 3, SND_HEAVY};
+static const attack_t fireball_atk = {ANIM_FIREBALL, 12, 18, 14, 14, 3, SND_FBHIT};
 
 static void sync_obs(void) {
     for (u8 i = 0; i < 2; i++) {
@@ -65,7 +81,7 @@ static void resolve(fighter_t *a, fighter_t *d, const attack_t *atk, u8 flags, s
         d->vx = 0;
         fighter_set_anim(d, crouch ? ANIM_CBLOCK : ANIM_BLOCK);
         a->hits_blocked++;
-        fx_spark(cx, cy, 1);
+        fx_spark(cx, cy, FXS_BLOCK, a->facing);
         sound_cmd(SND_BLOCK);
         hitstop = atk->hitstop - 2;
         d->push = push / 2;
@@ -96,7 +112,7 @@ static void resolve(fighter_t *a, fighter_t *d, const attack_t *atk, u8 flags, s
             fighter_set_anim(d, (d->joy & J_DOWN) ? ANIM_CHIT : ANIM_HIT);
             hitstop = atk->hitstop;
         }
-        fx_spark(cx, cy, 0);
+        fx_spark(cx, cy, d->hp == 0 ? FXS_KO : atk->hitstop >= 10 ? FXS_HEAVY : FXS_LIGHT, a->facing);
         sound_cmd(atk->sfx);
         d->push = push;
     }
@@ -133,7 +149,7 @@ static void check_projectiles(void) {
     if (projs[0].active == 1 && projs[1].active == 1) {
         s16 dx = PX(projs[0].x - projs[1].x);
         if (dx > -24 && dx < 24) {
-            fx_spark(PX(projs[0].x) - dx / 2, projs[0].y, 1);
+            fx_spark(PX(projs[0].x) - dx / 2, projs[0].y, FXS_HEAVY, projs[0].dir);
             projs[0].active = projs[1].active = 0;
             return;
         }
@@ -234,8 +250,9 @@ static void setup_video(void) {
     hw_load_palette(PAL_SKY, pal_sky);
     hw_load_palette(PAL_CITY, pal_city);
     hw_load_palette(PAL_STREET, pal_street);
-    hw_load_palette(PAL_P1, char_p1.pal);
-    hw_load_palette(PAL_P2, char_p2.pal);
+    const character_t *c1 = roster[g.sel_ch[0]], *c2 = roster[g.sel_ch[1]];
+    hw_load_palette(PAL_P1, char_palette(0, c1, g.sel_color[0]));
+    hw_load_palette(PAL_P2, char_palette(1, c2, g.sel_color[1]));
     hw_load_palette(PAL_FX, pal_fx);
     hw_load_palette(PAL_MSG, pal_msg);
     hw_load_palette(PAL_PROJ, pal_proj);
@@ -247,8 +264,8 @@ static void setup_video(void) {
     stage_init();
     fx_init();
     // P2 usa sprites de índice menor: P1 se dibuja encima
-    fighter_init(&fs[1], 1, SPR_FIGHTER, PAL_P2, &char_p2);
-    fighter_init(&fs[0], 0, SPR_FIGHTER + FIGHTER_HW_COLS, PAL_P1, &char_p1);
+    fighter_init(&fs[1], 1, SPR_FIGHTER, PAL_P2, c2);
+    fighter_init(&fs[0], 0, SPR_FIGHTER + FIGHTER_HW_COLS, PAL_P1, c1);
 }
 
 static void round_setup(void) {
@@ -304,8 +321,12 @@ u8 game_match(u8 demo, u8 p1_human, u8 p2_human) {
         char msg[10] = "ROUND 1";
         msg[6] = '0' + g.round;
         hud_message(msg);
+        // la música arranca (o vuelve después del fundido del K.O.) con el locutor
+        sound_cmd(SND_MUS_FIGHT);
+        sound_cmd(g.round == 1 ? SND_VO_ROUND1 : g.round == 2 ? SND_VO_ROUND2 : SND_VO_FINAL);
         if (hold_frames(50, 0, demo)) return 1;
         hud_message("FIGHT!");
+        sound_cmd(SND_VO_FIGHT);
         if (hold_frames(40, 0, demo)) return 1;
         hud_message(0);
         fs[0].state = fs[1].state = FS_IDLE;
@@ -333,6 +354,8 @@ u8 game_match(u8 demo, u8 p1_human, u8 p2_human) {
         else if (!g.timer && fs[0].hp != fs[1].hp) win = fs[0].hp > fs[1].hp ? &fs[0] : &fs[1];
         g.rstate = g.timer ? RS_KO : RS_TIMEUP;
         hud_message(g.timer ? "K.O." : "TIME");
+        sound_cmd(SND_MUS_CUT);            // como en KOF: la música se corta en el K.O.
+        if (g.timer) sound_cmd(SND_VO_KO);
         if (hold_frames(120, 0, demo)) return 1;
         if (win) {
             win->wins++;
@@ -347,6 +370,9 @@ u8 game_match(u8 demo, u8 p1_human, u8 p2_human) {
     }
     g.mode = MODE_MATCH_END;
     hud_message(wins_msg(fs[0].wins > fs[1].wins ? &fs[0] : &fs[1], 1));
+    sound_cmd(SND_MUS_WIN);
+    sound_cmd(SND_VO_YOUWIN);
+    ng_center_text(24, PAL_TEXT, "DE ARGENTINA CON AMOR");
     hold_frames(150, 0, 0);
     return 0;
 }

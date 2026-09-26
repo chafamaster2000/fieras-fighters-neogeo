@@ -1,0 +1,99 @@
+{
+ "groups": {
+  "hit": 2,
+  "block": 1,
+  "ball": 2,
+  "boom": 2,
+  "dust": 1
+ },
+ "anims": [
+  {
+   "name": "hit_l",
+   "dir": "hit_l",
+   "dur": 3,
+   "loop": 0,
+   "anchor": [
+    27,
+    32
+   ],
+   "group": "hit"
+  },
+  {
+   "name": "hit_h",
+   "dir": "hit_h",
+   "dur": 3,
+   "loop": 0,
+   "anchor": [
+    34,
+    40
+   ],
+   "group": "hit"
+  },
+  {
+   "name": "block",
+   "dir": "block",
+   "dur": 3,
+   "loop": 0,
+   "anchor": [
+    32,
+    32
+   ],
+   "group": "block"
+  },
+  {
+   "name": "ball",
+   "dir": "ball",
+   "dur": 3,
+   "loop": 1,
+   "anchor": [
+    70,
+    25
+   ],
+   "group": "ball"
+  },
+  {
+   "name": "launch",
+   "dir": "launch",
+   "dur": 2,
+   "loop": 0,
+   "anchor": [
+    24,
+    24
+   ],
+   "group": "ball"
+  },
+  {
+   "name": "boom",
+   "dir": "boom",
+   "dur": 3,
+   "loop": 0,
+   "anchor": [
+    48,
+    48
+   ],
+   "group": "boom"
+  },
+  {
+   "name": "dust",
+   "dir": "dust",
+   "dur": 4,
+   "loop": 0,
+   "anchor": [
+    32,
+    31
+   ],
+   "group": "dust"
+  },
+  {
+   "name": "dust_s",
+   "dir": "dust_s",
+   "dur": 3,
+   "loop": 0,
+   "anchor": [
+    24,
+    15
+   ],
+   "group": "dust"
+  }
+ ]
+}

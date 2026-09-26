@@ -26,7 +26,11 @@ BUILDDIR=build
 SRCDIRS=assets src
 # default build flags, can be overriden per target
 CFLAGS=-I$(BUILDDIR) -Isrc -std=c99 -fomit-frame-pointer -O2 -g -Wall -Werror=overflow
-LDFLAGS=
+# Cabecera 68k, byte $114 = modo del eye-catcher: 0 lo dibuja el BIOS del
+# sistema (animación + jingle con el comando 2 del Z80), 1 lo hace el juego,
+# 2 ninguno. El byte $115 (banco de tiles del logo) lo fija el crt0 de
+# ngdevkit en 0: tiles 0-255 = base-crom-logo.
+LDFLAGS=-Wl,--defsym,rom_eye_catcher_mode=0
 Z80FLAGS=
 Z80LDFLAGS=
 
@@ -39,7 +43,7 @@ include config.mk
 # Name of the rom file created
 GAMEROM=fighter
 # Game title, long description
-GAMETITLE=Neo Geo Fighter prototype
+GAMETITLE=Fieras Fighters
 include rom.mk
 
 # All the generic build targets (68k, Z80, assets, run)
@@ -88,7 +92,9 @@ $(SROM1): $(BUILDDIR)/assets/base-srom-text-shadow.fix $(BUILDDIR)/assets/hud.fi
 # (TILE_* en src/gen/assets.h): logo del BIOS (0-255) -> efectos -> cielo ->
 # piso (5 franjas) -> fuente -> ciudad con público animado -> personajes P1 y P2.
 # Los personajes van al final: tools/neosprite.py los numera desde TILE_END.
-CROM_PARTS=base-crom-logo fx proj sky floor0 floor1 floor2 floor3 floor4 font city char_p1 char_p2
+# La UI (logos, título, selector) va después de los personajes: TILE_UI en src/gen/ui_gen.h.
+# Los VFX del combate van últimos: TILE_VFX en src/gen/vfx_gen.h (tools/neofx.py).
+CROM_PARTS=base-crom-logo fx proj sky floor0 floor1 floor2 floor3 floor4 font city char_p1 char_p2 ui vfx
 $(CROM1): $(CROM_PARTS:%=$(BUILDDIR)/assets/%.c1)
 $(CROM2): $(CROM_PARTS:%=$(BUILDDIR)/assets/%.c2)
 
@@ -104,6 +110,11 @@ SOUND_DRIVER=$(BUILDDIR)/sound_driver.ihx
 $(MROM1): $(SOUND_DRIVER)
 $(SOUND_DRIVER): $(BUILDDIR)/assets/ngdevkit-eye-catcher.lib $(BUILDDIR)/src/sound_driver.rel
 $(BUILDDIR)/src/sound_driver.rel: $(BUILDDIR)/assets/samples.inc
+# Música: módulos Furnace (tools/make_music.py) -> streams NSS + instrumentos
+MUSICS=title select fight win
+MUSIC_RELS=$(MUSICS:%=$(BUILDDIR)/nss/nss-%.rel) $(MUSICS:%=$(BUILDDIR)/nss/instr-%.rel)
+$(SOUND_DRIVER): $(MUSIC_RELS)
+$(MUSIC_RELS): $(BUILDDIR)/assets/samples.inc
 $(VROM1): assets/samples-map.yaml
 
 
@@ -138,8 +149,17 @@ $(VROM1): assets/samples-map.yaml
 # that get invoked automatically when added to the variable below.
 CUSTOM_GENERATE_TARGETS=generate-sfx
 generate-sfx: $(BUILDDIR)/assets/samples.inc
-$(BUILDDIR)/assets/samples.inc: assets/samples-map.yaml $(wildcard assets/sfx/*.wav)
+# si cambia un sample se borra la V-ROM para que build.mk la vuelva a empaquetar
+$(BUILDDIR)/assets/samples.inc: assets/samples-map.yaml $(wildcard assets/sfx/*.wav) $(MUSICS:%=assets/music/%.fur)
 	$(VROMTOOL) --asm -s $(VROMSIZE) $< -o $(VROM1) -m $@
+	rm -f $(VROM1)
+generate-sfx: $(MUSICS:%=$(BUILDDIR)/nss/nss-%.s) $(MUSICS:%=$(BUILDDIR)/nss/instr-%.s)
+$(BUILDDIR)/nss/nss-%.s: assets/music/%.fur | $(BUILDDIR)/nss
+	$(NSSTOOL) -z $< -n nss_$* -o $@
+$(BUILDDIR)/nss/instr-%.s: assets/music/%.fur | $(BUILDDIR)/nss
+	$(FURTOOL) $< --instruments -n instr_$* -m assets/samples.inc -o $@
+$(BUILDDIR)/nss:
+	mkdir -p $@
 
 
 
@@ -155,7 +175,9 @@ CHARS=ROBOCLICK NINJAODA
 assets:
 	python3 tools/make_assets.py
 	for n in $(CHARS); do python3 tools/neosprite.py char art/tmp-procedural/$$n --name $$n || exit 1; done
+	python3 tools/neoui.py
 	tools/make_sfx.sh
+	python3 tools/neofx.py
 
 # Arte real: art/src/characters/<NOMBRE>/ y
 # art/src/stage/. Lo que falte sale del procedural (art/tmp-procedural/).
@@ -166,5 +188,7 @@ art:
 	  python3 tools/neosprite.py char $$d --name $$n --preview || exit 1; \
 	done
 	python3 tools/neosprite.py stage art/src/stage
+	python3 tools/neoui.py
+	python3 tools/neofx.py
 
 .PHONY: assets art

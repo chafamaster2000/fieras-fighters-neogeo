@@ -1,6 +1,25 @@
+# Samples ADPCM-A que empaqueta vromtool en la V-ROM.
+# Los WAV salen de tools/make_sfx.py (18500 Hz, mono, 16 bits).
+# La batería de la música viaja adentro de cada .fur (entradas 'furnace').
 - adpcm_a: {name: whoosh, uri: "file://assets/sfx/whoosh.wav"}
 - adpcm_a: {name: hit, uri: "file://assets/sfx/hit.wav"}
 - adpcm_a: {name: heavy, uri: "file://assets/sfx/heavy.wav"}
 - adpcm_a: {name: block, uri: "file://assets/sfx/block.wav"}
 - adpcm_a: {name: fireball, uri: "file://assets/sfx/fireball.wav"}
 - adpcm_a: {name: ko, uri: "file://assets/sfx/ko.wav"}
+- adpcm_a: {name: fbhit, uri: "file://assets/sfx/fbhit.wav"}
+- adpcm_a: {name: land, uri: "file://assets/sfx/land.wav"}
+- adpcm_a: {name: menu_move, uri: "file://assets/sfx/menu_move.wav"}
+- adpcm_a: {name: menu_ok, uri: "file://assets/sfx/menu_ok.wav"}
+- adpcm_a: {name: logo, uri: "file://assets/sfx/logo.wav"}
+- adpcm_a: {name: fire, uri: "file://assets/sfx/fire.wav"}
+- adpcm_a: {name: vo_round1, uri: "file://assets/sfx/vo_round1.wav"}
+- adpcm_a: {name: vo_round2, uri: "file://assets/sfx/vo_round2.wav"}
+- adpcm_a: {name: vo_final, uri: "file://assets/sfx/vo_final.wav"}
+- adpcm_a: {name: vo_fight, uri: "file://assets/sfx/vo_fight.wav"}
+- adpcm_a: {name: vo_ko, uri: "file://assets/sfx/vo_ko.wav"}
+- adpcm_a: {name: vo_youwin, uri: "file://assets/sfx/vo_youwin.wav"}
+- furnace: {name: title, uri: "file://assets/music/title.fur"}
+- furnace: {name: select, uri: "file://assets/music/select.fur"}
+- furnace: {name: fight, uri: "file://assets/music/fight.fur"}
+- furnace: {name: win, uri: "file://assets/music/win.fur"}

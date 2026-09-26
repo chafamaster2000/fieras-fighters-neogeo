@@ -54,6 +54,8 @@ static void advance_anim(fighter_t *f) {
     f->entered = 1;
 }
 
+void fighter_tick_anim(fighter_t *f) { advance_anim(f); }
+
 void fighter_init(fighter_t *f, u8 id, u16 spr, u8 pal, const character_t *ch) {
     f->id = id;
     f->spr = spr;
@@ -252,8 +254,10 @@ void fighter_physics(fighter_t *f) {
                 f->state = FS_LAND;
                 f->vx = 0;
                 fighter_set_anim(f, ANIM_LAND);
+                sound_cmd(SND_LAND);
             } else if (f->state == FS_KO || f->state == FS_KNOCKDOWN) {
                 f->vx = 0;
+                sound_cmd(SND_LAND);
             }
         }
     }

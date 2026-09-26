@@ -16,7 +16,23 @@
 #define SPR_FIGHTER  156  // 2 luchadores x FIGHTER_HW_COLS (10) columnas: P2 156.., P1 166..
 #define SPR_PROJ     178  // 2 proyectiles x 3 columnas
 #define SPR_SPARK    184  // 2 chispas x 2 columnas
-#define SPR_MSG      190  // mensajes grandes: hasta 12 letras x 2 columnas
+#define SPR_MSG      190  // mensajes grandes: hasta 16 letras x 2 columnas
+// --- VFX del combate (src/fx.c, tools/neofx.py) ---
+// 32 sprites desde 224: en el combate ese rango está libre (lo usan solo las
+// pantallas previas, que reinician todo). Paletas: PAL_VFX0 (23) y 25..31.
+#define SPR_VFX      224
+#define SPR_VFX_N    32
+#define PAL_VFX0     23
+// --- fin VFX ---
+// Pantallas previas (logos, título, selector): no conviven con el combate
+// Fondo del título (usa el rango del escenario, que no está en pantalla)
+#define SPR_TBG      1    // cielo: 20 columnas + corte
+#define SPR_TBUST_L  24   // busto izquierdo: hasta 10 columnas + corte
+#define SPR_TBUST_R  36   // busto derecho
+#define SPR_LOGO     224  // logo o título: hasta 20 columnas + corte
+#define SPR_FIRE     245  // fuego de FIERAS sobre el título: hasta 20 columnas + corte
+#define SPR_PORTRAIT 248  // retratos del selector: 4 columnas cada uno
+#define SPR_CURSOR   296  // 2 cursores x 4 columnas (+ corte)
 
 // Paletas
 #define PAL_TEXT     0
@@ -30,6 +46,15 @@
 #define PAL_MSG      22
 #define PAL_PROJ     23
 #define PAL_CROWD    24
+#define PAL_CUR1     25   // cursor del selector, P1 (cyan)
+#define PAL_CUR2     26   // cursor del selector, P2 (magenta)
+#define PAL_UI       32   // paletas de tools/neoui.py (UI_PALS)
+#define PAL_SHINE    96   // copias por columna para el barrido de brillo
+// Fix layer: texto de colores (índice 1 color, 2 sombra)
+#define PAL_TXT_CYAN 2
+#define PAL_TXT_MAG  3
+#define PAL_TXT_GOLD 4
+#define PAL_TXT_GRAY 5
 
 static inline u16 scb3(s16 y, u8 height) {
     return (u16)((((496 - y) & 0x1ff) << 7) | (height & 0x3f));

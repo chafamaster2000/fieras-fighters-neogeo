@@ -65,6 +65,7 @@ typedef struct {
 void fighter_init(fighter_t *f, u8 id, u16 spr, u8 pal, const character_t *ch);
 void fighter_reset_round(fighter_t *f, s16 x, s8 facing);
 void fighter_set_anim(fighter_t *f, u8 anim);
+void fighter_tick_anim(fighter_t *f);   // solo avanza la animación (selector)
 const frame_t *fighter_frame(const fighter_t *f);
 const attack_t *fighter_attack(const fighter_t *f);
 void fighter_update(fighter_t *f, const fighter_t *opp, u8 control, u8 can_fireball);
