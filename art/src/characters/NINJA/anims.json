@@ -193,12 +193,12 @@
    "loop": false
   },
   "FIREBALL": {
-   "src": "punch",
+   "src": "fireball",
    "seq": [
     0,
     1,
-    1,
-    2
+    2,
+    3
    ],
    "dur": [
     8,
@@ -212,66 +212,55 @@
     "",
     ""
    ],
-   "loop": false,
-   "_tmp": "reusa punch hasta tener arte propio"
+   "loop": false
   },
   "BLOCK": {
-   "src": "idle",
+   "src": "block",
    "seq": [
-    0
-   ],
-   "dur": [
-    60
-   ],
-   "flags": [
-    ""
-   ],
-   "loop": true,
-   "_tmp": "reusa idle hasta tener arte propio"
-  },
-  "CBLOCK": {
-   "src": "crouch",
-   "seq": [
+    0,
     1
    ],
    "dur": [
+    3,
+    60
+   ],
+   "flags": [
+    "",
+    ""
+   ],
+   "loop": false
+  },
+  "CBLOCK": {
+   "src": "cblock",
+   "seq": [
+    0
+   ],
+   "dur": [
     60
    ],
    "flags": [
     ""
    ],
-   "loop": true,
-   "_tmp": "reusa crouch"
+   "loop": true
   },
   "CPUNCH": {
-   "src": "crouch",
+   "src": "crouch_punch",
    "seq": [
     0,
     1,
-    0
+    2
    ],
    "dur": [
     3,
-    3,
-    6
+    4,
+    7
    ],
    "flags": [
     "",
     "ACTIVE|LOW",
     ""
    ],
-   "loop": false,
-   "hit": [
-    null,
-    [
-     8,
-     -66,
-     52,
-     22
-    ],
-    null
-   ],
-   "_tmp": "reusa crouch con caja baja hasta tener arte propio"
+   "loop": false
   }
  }
 }

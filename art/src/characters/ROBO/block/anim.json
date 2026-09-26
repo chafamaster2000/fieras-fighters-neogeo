@@ -1,0 +1,15 @@
+{
+ "frames": [
+  {
+   "file": "00.png",
+   "dur": 3,
+   "flags": []
+  },
+  {
+   "file": "01.png",
+   "dur": 60,
+   "flags": []
+  }
+ ],
+ "loop": false
+}

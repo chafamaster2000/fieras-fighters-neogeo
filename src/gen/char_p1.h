@@ -2,5 +2,5 @@
 #ifndef GEN_CHAR_P1_H
 #define GEN_CHAR_P1_H
 /* tiles que ocupa en la C-ROM (con relleno hasta múltiplo de 16) */
-#define CHAR_P1_TILES 1312
+#define CHAR_P1_TILES 1632
 #endif

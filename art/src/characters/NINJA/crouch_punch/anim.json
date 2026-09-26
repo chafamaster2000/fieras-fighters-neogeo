@@ -1,0 +1,23 @@
+{
+ "frames": [
+  {
+   "file": "00.png",
+   "dur": 3,
+   "flags": []
+  },
+  {
+   "file": "01.png",
+   "dur": 4,
+   "flags": [
+    "ACTIVE",
+    "LOW"
+   ]
+  },
+  {
+   "file": "02.png",
+   "dur": 7,
+   "flags": []
+  }
+ ],
+ "loop": false
+}
