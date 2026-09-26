@@ -27,10 +27,11 @@
 #define TAG_ROW        20            // lema en y 144
 #define COPY_ROW       22            // (C) 2026 ODACLICK en y 160
 #define TITLE_Y        142           // logo abajo (y 70-214, contenido hasta y 207): el título es un VS de los bustos
-#define PORTRAIT_CY    88            // centro vertical de la grilla del selector
+#define PORTRAIT_CY    150           // grilla del selector abajo al centro (y 118-182): arriba quedan las caras de los bustos
+#define LABEL_ROW      15            // 1P/2P justo arriba de la grilla (y 104)
 
 static u8 quick;                     // START con D: directo al match
-static u16 scroll[3];
+__attribute__((unused)) static u16 scroll[3];   // solo el título sin fondo propio
 
 // Fix layer: 1 color, 2 sombra
 static const u16 txt_pals[4][16] = {
@@ -142,6 +143,7 @@ static u8 eyecatch_logo(u8 img) {
             backdrop((u8)(16 - (t - 60) * 8 / 22));
         } else if (t == 82) {                     // en la línea: se da vuelta y toma color
             ui_load_flip(img, SPR_LOGO, 0);
+            ui_place(img, SPR_LOGO, SCREEN_W / 2, DOG_Y, 15, 0);   // sigue en la línea
             ui_shine_reset();
             ui_shine(img, -100, 16, 16);
             sound_cmd(SND_LOGO);
@@ -413,21 +415,24 @@ static u8 front_title(u8 attract) {
 //
 // Coreografía (frames a 60 Hz), todo con recursos de la época:
 //   entrada (SEL_INTRO = 40, A o START salta al final):
-//     0-12  el escenario de fondo sube desde negro (fundido de paleta)
+//     0-12  el degradé VS de fondo sube desde negro (fundido de paleta)
+//     2-22  los bustos grandes entran desde los costados, detrás de todo
 //     4-14  SELECT YOUR FIGHTER se destapa desde el centro en blanco; en 16 se asienta en dorado
 //    10-31  los retratos saltan con el zoom de hardware (SCB2), escalonados de a 4
 //           frames, con rebote y un destello blanco que se apaga
 //    14-30  los luchadores entran deslizándose desde los bordes, frenando
 //    32     nombres, 1P/2P, cursores, reloj y ayuda: recién ahí se juega
-//   confirmación: el luchador pasa a blanco pleno y vuelve a su paleta en 16
-//     frames (col_mix hacia blanco), sincronizado con el destello del retrato,
-//     con SND_CHAR_OK
+//   cambio de cursor: el busto de ese lado se recarga (solo su SCB1) y entra
+//     en 10 frames desde afuera, de blanco a su color
+//   confirmación: el luchador y su busto pasan a blanco pleno y vuelven a su
+//     paleta en 16 frames (col_mix hacia blanco), sincronizados con el
+//     destello del retrato, con SND_CHAR_OK
 //   salida tipo VS (SEL_OUTRO = 60 frames desde la segunda confirmación):
 //     0-17  los dos en pose de victoria mientras termina el destello
 //    18-27  destello blanco de toda la pantalla, se borra la interfaz y los
 //           retratos se achican hasta desaparecer
 //    20-34  "VS" gigante entra con zoom y parpadeo (msg_show) y un impacto
-//    34-51  los luchadores salen disparados hacia los bordes
+//    34-51  los luchadores salen disparados hacia los bordes (los bustos detrás, a 3/4)
 //    42-58  fundido a negro (el VS se funde con todo) y arranca el match
 
 #define SEL_INTRO   40
@@ -456,10 +461,11 @@ static s16 portrait_x(u8 i) {         // borde izquierdo del retrato i
 // 15 paletas, así que la mezcla se calcula durante el frame (sp_mix) y se
 // copia al principio del siguiente, en el vblank (sp_commit). Sin esto el
 // destello blanco y los fundidos se cortaban a mitad de pantalla.
-#define SP_MAX 20
+#define SP_MAX 24
 static struct { u8 hw, cap; const u16 *src; } sp[SP_MAX];
 static u16 sp_buf[SP_MAX][16];
 static u8 sp_n, sp_dirty;
+static u8 sp_level, sp_white;         // último sp_mix: los bustos lo siguen
 
 static void sp_add(u8 hw, const u16 *src, u8 cap) {
     if (sp_n == SP_MAX) return;
@@ -470,6 +476,8 @@ static void sp_add(u8 hw, const u16 *src, u8 cap) {
 // white=0: fundido a negro (level 16 = color pleno, respetando el tope);
 // white=1: hacia blanco desde el color pleno (level 16 = blanco)
 static void sp_mix(u8 level, u8 white) {
+    sp_level = level;
+    sp_white = white;
     for (u8 i = 0; i < sp_n; i++) {
         const u16 *src = sp[i].src;
         u8 cap = sp[i].cap;
@@ -493,9 +501,153 @@ static void sp_commit(void) {
     }
 }
 
-static const struct { u8 pal; const u16 *src; } sel_stage_pals[4] = {
-    {PAL_SKY, pal_sky}, {PAL_CITY, pal_city}, {PAL_STREET, pal_street}, {PAL_CROWD, pal_crowd}};
-#define SEL_BG_CAP 6                  // el escenario detrás del selector, apagado a 6/16
+// Fondo: el mismo degradé VS del título (20 columnas). El escenario de
+// Córdoba costaba hasta 63 sprites por línea y con los bustos no entraba.
+static void sky_pals(void) {
+    const uiimg_t *im = &ui_imgs[UI_TITLE_SKY];
+    for (u8 p = 0; p < im->npal; p++) sp_add(PAL_UI + im->pal0 + p, ui_pals[im->pal0 + p], 16);
+}
+
+// ---- bustos por lado
+//
+// Cada lado muestra, detrás de todo, el busto grande del personaje que tiene
+// el cursor, mirando al centro. Los dos bustos son los del título: left.png
+// (ROBOCLICK, mira a la derecha) y right.png (NINJAODA, mira a la izquierda).
+// Si el busto no es el nativo de ese lado se espeja por hardware: columnas al
+// revés + bit de espejo por tile, en x = 320 - x - ancho. Cada lado tiene sus
+// 4 paletas propias (PAL_SBUST), así el destello o el color alternativo de un
+// lado no toca al otro, y en el espejo los dos pueden mostrar el mismo busto.
+//
+//   cambio de cursor: el lado se oculta, en el vblank siguiente se recarga
+//     solo su SCB1 y entra desde afuera en BUST_SWAP frames, de blanco a su color
+//   confirmación: el mismo destello blanco que el luchador (p->flash)
+//   color alternativo: canales rotados como char_palette() (el dorado de P2)
+#define BUST_CAP     10               // un poco apagados: los luchadores van adelante
+#define BUST_DX      12               // un poco hacia afuera: más lugar entre los dos hocicos
+#define BUST_DY      0
+#define BUST_SWAP    10
+#define BUST_SWAP_DX 36
+
+typedef struct {
+    u8 img, flip, color, swap, pending, key_ok;
+    u8 k_level, k_white, k_flash;     // lo último mezclado en bust_buf
+} bust_t;
+static bust_t bust[2];
+static u16 bust_src[2][PAL_SBUST_N][16];
+static u16 bust_buf[2][PAL_SBUST_N][16];
+static u8 bust_dirty;
+static s16 bust_slide;                // entrada y salida: px hacia afuera (<0 oculto)
+
+static u8 bust_img(u8 ch) {           // el busto nativo del lado s es el imagen s
+    return ch ? UI_TITLE_RIGHT : UI_TITLE_LEFT;
+}
+
+static u8 bust_npal(u8 s) {
+    u8 n = ui_imgs[bust[s].img].npal;
+    return n > PAL_SBUST_N ? PAL_SBUST_N : n;
+}
+
+static u16 rot_rgb(u16 c) {           // igual que char_palette(): R<-G<-B<-R
+    u16 r = (c >> 8) & 15, gg = (c >> 4) & 15, b = c & 15;
+    u16 lr = (c >> 14) & 1, lg = (c >> 13) & 1, lb = (c >> 12) & 1;
+    return (c & 0x8000) | (lg << 14) | (lb << 13) | (lr << 12) | (gg << 8) | (b << 4) | r;
+}
+
+static void bust_colors(u8 s) {
+    const uiimg_t *im = &ui_imgs[bust[s].img];
+    for (u8 p = 0; p < bust_npal(s); p++)
+        for (u8 k = 0; k < 16; k++) {
+            u16 c = ui_pals[im->pal0 + p][k];
+            bust_src[s][p][k] = bust[s].color ? rot_rgb(c) : c;
+        }
+    bust[s].key_ok = 0;
+}
+
+static void bust_load(u8 s) {
+    ui_load_pal(bust[s].img, SPR_SBUST + s * SPR_SBUST_N, PAL_SBUST + s * PAL_SBUST_N, bust[s].flip);
+    ui_hide(SPR_SBUST + s * SPR_SBUST_N);
+}
+
+// Busto del personaje ch con color `color` en el lado s. now=1 carga ya (al
+// armar la pantalla, con todo en negro); si no, se oculta y se recarga en
+// el vblank siguiente (bust_commit) para no mostrar tiles a medio escribir.
+static void bust_set(u8 s, u8 ch, u8 color, u8 now) {
+    bust_t *b = &bust[s];
+    u8 img = bust_img(ch);
+    u8 flip = (img == UI_TITLE_RIGHT) != s;
+    u8 recolor = color != b->color;
+    if (now || img != b->img || flip != b->flip) {
+        b->img = img;
+        b->flip = flip;
+        recolor = 1;
+        if (now) bust_load(s);
+        else {
+            ui_hide(SPR_SBUST + s * SPR_SBUST_N);
+            b->pending = 1;
+            b->swap = BUST_SWAP;
+        }
+    }
+    b->color = color;
+    if (recolor) bust_colors(s);
+}
+
+// Paletas del lado s: fundido/destello global de sp_mix y encima el blanco
+// propio del lado. Se mezcla solo si algo cambió; bust_commit las copia.
+static void bust_mix(u8 s, u8 flash) {
+    bust_t *b = &bust[s];
+    if (b->key_ok && b->k_level == sp_level && b->k_white == sp_white && b->k_flash == flash) return;
+    b->key_ok = 1; b->k_level = sp_level; b->k_white = sp_white; b->k_flash = flash;
+    u8 l = (u8)(((u16)sp_level * BUST_CAP) >> 4);
+    for (u8 p = 0; p < bust_npal(s); p++)
+        for (u8 k = 1; k < 16; k++) {
+            u16 c = col_mix(bust_src[s][p][k], BUST_CAP, 0);
+            if (sp_white) c = col_mix(c, sp_level, 1);
+            else if (l < BUST_CAP) c = col_mix(bust_src[s][p][k], l, 0);
+            if (flash) c = col_mix(c, flash, 1);
+            bust_buf[s][p][k] = c;
+        }
+    bust_dirty = 1;
+}
+
+// Al principio del frame, en el vblank, justo después de sp_commit
+static void bust_commit(void) {
+    if (bust_dirty) {
+        bust_dirty = 0;
+        for (u8 s = 0; s < 2; s++)
+            for (u8 p = 0; p < bust_npal(s); p++) {
+                volatile u16 *dst = MMAP_PALBANK1 + (PAL_SBUST + s * PAL_SBUST_N + p) * 16;
+                for (u8 k = 1; k < 16; k++) dst[k] = bust_buf[s][p][k];
+            }
+    }
+    for (u8 s = 0; s < 2; s++)
+        if (bust[s].pending) { bust[s].pending = 0; bust_load(s); }
+}
+
+// Un frame del busto del lado s: posición (entrada/salida + cambio) y paletas
+static void bust_draw(u8 s, u8 flash, s16 slide) {
+    bust_t *b = &bust[s];
+    u16 spr = SPR_SBUST + s * SPR_SBUST_N;
+    const uiimg_t *im = &ui_imgs[b->img];
+    u8 white = flash;
+    s16 out = slide;
+    if (b->swap && !b->pending) {
+        u8 k = b->swap--;
+        u8 w = (u8)(k * 16 / BUST_SWAP);
+        if (w > white) white = w;
+        out += (s16)(BUST_SWAP_DX * k * k / (BUST_SWAP * BUST_SWAP));
+    } else if (b->pending) {
+        white = 16;                   // aparece en blanco en el frame de la recarga
+    }
+    bust_mix(s, white);
+    if (b->pending || slide < 0) { ui_hide(spr); return; }
+    s16 x = b->flip ? ui_mirror_x(b->img) : im->x;
+    x += s ? BUST_DX + out : -BUST_DX - out;
+    s16 w = (s16)im->w * 16;
+    // fuera de pantalla se oculta: con x negativa grande las columnas darían
+    // la vuelta (x es de 9 bits) y asomarían por el otro borde
+    if (x <= -w || x >= SCREEN_W) { ui_hide(spr); return; }
+    spr_move(spr, x, im->y + BUST_DY, im->h);
+}
 
 static void seat_name(u8 s) {
     const character_t *ch = roster[seat[s].cur];
@@ -510,23 +662,24 @@ static void seat_preview(u8 s) {
     const character_t *ch = roster[p->cur];
     u8 pal = s ? PAL_P2 : PAL_P1;
     fighter_init(&p->f, s, s ? SPR_FIGHTER : SPR_FIGHTER + FIGHTER_HW_COLS, pal, ch);
-    fighter_reset_round(&p->f, s ? 262 : 58, s ? -1 : 1);
+    fighter_reset_round(&p->f, s ? 268 : 52, s ? -1 : 1);   // al costado de la grilla
     fighter_set_anim(&p->f, p->done ? ANIM_WIN : ANIM_IDLE);
     p->f.drawn_img = -1;
     p->pal = char_palette(s, ch, p->color);
     hw_load_palette(pal, p->pal);
     fade_add(pal, p->pal, 16);
+    bust_set(s, p->cur, p->color, 0);
     if (!sel_quiet) seat_name(s);
 }
 
 static void draw_labels(void) {
-    clear_row(6);
+    clear_row(LABEL_ROW);
     for (u8 s = 0; s < 2; s++) {
         if (!seat[s].human && !seat[0].done && s == 1) continue;
         s16 x = portrait_x(seat[s].cur);
         const char *lab = s == 0 ? "1P" : seat[1].human ? "2P" : "CPU";
         u8 col = s == 0 ? (u8)(x / 8) : (u8)((x + 64) / 8 - (seat[1].human ? 2 : 3));
-        ng_text(col, 6, s ? PAL_TXT_MAG : PAL_TXT_CYAN, lab);
+        ng_text(col, LABEL_ROW, s ? PAL_TXT_MAG : PAL_TXT_CYAN, lab);
     }
 }
 
@@ -599,12 +752,13 @@ static void sel_draw(u16 t, u8 cursors, s16 off) {
             u16 v = cur_pals[s][2];
             MMAP_PALBANK1[(PAL_CUR1 + s) * 16 + 2] = (t & 8) ? col_mix(v, 6, 1) : v;
         }
-        // confirmación: luchador y retrato de blanco a su color, juntos
+        // confirmación: luchador, busto y retrato de blanco a su color, juntos
         if (p->flash) {
             p->flash--;
             portrait_flash(p->cur, p->flash);
             fighter_blink(s, p->flash);
         }
+        bust_draw(s, p->flash, bust_slide);
         fighter_tick_anim(&p->f);
         if (off < 0) spr_hide(p->f.spr);
         else fighter_draw(&p->f, s ? -off : off, 0);
@@ -637,6 +791,10 @@ static s16 intro_frame(u8 t, u8 sec) {
     static const u8 pop_hz[9] = {1, 4, 8, 12, 15, 15, 13, 14, 15};
     static const u8 pop_vz[9] = {24, 84, 150, 220, 255, 255, 214, 238, 255};
     if (t < 12) sp_mix((u8)((t + 1) * 4 / 3), 0);   // lo copia sp_commit en el frame t+1
+    // los bustos entran desde los costados (frames 2-22), antes que los luchadores
+    if (t < 2) bust_slide = -1;
+    else if (t < 22) { s16 r = 22 - (s16)t; bust_slide = (s16)(170 * r * r / 400); }
+    else bust_slide = 0;
     if (t >= 4 && t <= 14) head_reveal(t - 4, PAL_TEXT);
     if (t == 16) head_reveal(10, PAL_TXT_GOLD);
     for (u8 i = 0; i < ROSTER_N; i++) {
@@ -656,6 +814,7 @@ static s16 intro_frame(u8 t, u8 sec) {
 static void intro_skip(u8 sec) {
     sp_mix(16, 0);
     sp_commit();
+    bust_slide = 0;
     head_reveal(10, PAL_TXT_GOLD);
     for (u8 i = 0; i < ROSTER_N; i++) {
         portrait_pos(i, 15, 255);
@@ -678,7 +837,7 @@ static void outro_pals(u8 e) {        // paletas que tiene que mostrar el frame 
 static void select_outro(u16 t) {
     // todo lo que queda en pantalla entra al destello y al fundido
     sp_n = 0;
-    for (u8 i = 0; i < 4; i++) sp_add(sel_stage_pals[i].pal, sel_stage_pals[i].src, SEL_BG_CAP);
+    sky_pals();
     for (u8 i = 0; i < ROSTER_N; i++) {
         const uiimg_t *im = &ui_imgs[UI_PORTRAIT_ROBOCLICK + i];
         for (u8 k = 0; k < im->npal; k++) sp_add(PAL_UI + im->pal0 + k, ui_pals[im->pal0 + k], 16);
@@ -689,13 +848,16 @@ static void select_outro(u16 t) {
     for (u8 e = 0; e < SEL_OUTRO; e++, t++) {
         wait_frame();
         sp_commit();
+        bust_commit();
         if (e < 18) {                 // pose de victoria mientras termina el destello
             sel_draw(t, 1, 0);
             outro_pals(e + 1);
+            for (u8 s = 0; s < 2; s++) bust_mix(s, seat[s].flash);   // mismo frame que el destello global
             continue;
         }
         if (e == 18) {
-            clear_rows(3, 6);
+            clear_rows(3, 4);
+            clear_row(LABEL_ROW);
             clear_rows(27, 28);
             ui_hide(SPR_CURSOR);
             ui_hide(SPR_CURSOR + 5);
@@ -719,9 +881,12 @@ static void select_outro(u16 t) {
             fighter_draw(&seat[s].f, s ? -off : off, 0);
         }
         outro_pals(e + 1);
+        // los bustos se van con los luchadores, un poco más lentos, y se funden
+        for (u8 s = 0; s < 2; s++) bust_draw(s, 0, off * 3 / 4);
     }
     wait_frame();
     sp_commit();
+    bust_commit();
     msg_hide();
     fade_apply(0);                    // el resto de las paletas registradas, también a negro
 }
@@ -730,19 +895,23 @@ static void front_select(u8 vs_human) {
     g.mode = MODE_SELECT;
     sound_cmd(SND_MUS_SELECT);
     clear_screen();
-    // el escenario se carga ya en negro (stage_bg lo cargaría a pleno por
-    // unos frames mientras sube los tiles) y lo levanta la entrada
+    // el fondo y los bustos se cargan ya en negro (las paletas de hardware
+    // todavía tienen las del título a pleno) y los levanta la entrada
     sp_n = 0;
-    for (u8 i = 0; i < 4; i++) {
-        sp_add(sel_stage_pals[i].pal, sel_stage_pals[i].src, SEL_BG_CAP);
-        fade_add(sel_stage_pals[i].pal, sel_stage_pals[i].src, SEL_BG_CAP);
+    sky_pals();
+    {
+        const uiimg_t *im = &ui_imgs[UI_TITLE_SKY];
+        for (u8 p = 0; p < im->npal; p++) fade_add(PAL_UI + im->pal0 + p, ui_pals[im->pal0 + p], 16);
     }
     sp_add(PAL_TEXT, txt_white, 16);
     for (u8 i = 0; i < 4; i++) sp_add(PAL_TXT_CYAN + i, txt_pals[i], 16);
     sp_mix(0, 0);
     sp_commit();
-    stage_init();
-    stage_update(CAM_RANGE / 2, scroll);
+    bust[0] = (bust_t){0};
+    bust[1] = (bust_t){0};
+    bust_slide = -1;
+    ui_load(UI_TITLE_SKY, SPR_SBG, 0);
+    ui_put(UI_TITLE_SKY, SPR_SBG, 0, 0);
     for (u8 i = 0; i < ROSTER_N; i++) {
         u8 img = UI_PORTRAIT_ROBOCLICK + i;
         ui_palettes(img, 16);
@@ -764,6 +933,11 @@ static void front_select(u8 vs_human) {
     seat[0].human = 1;
     seat[1].human = vs_human;
     sel_quiet = 1;
+    // bustos iniciales: carga directa (todo está en negro todavía)
+    bust_set(0, seat[0].cur, 0, 1);
+    bust_set(1, seat[1].cur, 0, 1);
+    for (u8 s = 0; s < 2; s++) bust_mix(s, 0);
+    bust_commit();
     seat_preview(0);
     seat_preview(1);
     for (u8 s = 0; s < 2; s++) {
@@ -777,6 +951,7 @@ static void front_select(u8 vs_human) {
     for (t = 0;; t++) {
         wait_frame();
         sp_commit();
+        bust_commit();
         u8 j1 = pad_edge(0), j2 = pad_edge(1), st = stat_edge();
         if (intro < SEL_INTRO) {
             // A (de cualquiera) o START de P1 saltan la entrada

@@ -97,14 +97,17 @@ void ui_palettes(u8 img, u8 cap) {
     }
 }
 
-static void load_cols(u8 img, u16 spr, u8 shine, u8 fixed, u8 flip) {
+// base: primera paleta de hardware para las paletas normales (0 = las de la
+// imagen en PAL_UI); flip: espejo horizontal (columnas al revés + bit por tile)
+static void load_cols(u8 img, u16 spr, u8 shine, u8 fixed, u8 flip, u8 base) {
     const uiimg_t *im = &ui_imgs[img];
     for (u8 c = 0; c < im->w; c++) {
         const u16 *m = &ui_map[im->first + (flip ? im->w - 1 - c : c) * im->h];
         *REG_VRAMMOD = 1;
         *REG_VRAMADDR = ADDR_SCB1 + (spr + c) * 64;
         for (u8 r = 0; r < im->h; r++, m++) {
-            u8 pal = fixed ? fixed : shine ? PAL_SHINE + c * im->npal + (*m >> 12) : PAL_UI + im->pal0 + (*m >> 12);
+            u8 pal = fixed ? fixed : shine ? PAL_SHINE + c * im->npal + (*m >> 12)
+                                         : (base ? base : PAL_UI + im->pal0) + (*m >> 12);
             // bit 11: grupo de 8 cuadros, el LSPC anima los 3 bits bajos del tile
             *REG_VRAMRW = TILE_UI + (*m & 0x07ff);
             *REG_VRAMRW = ((u16)pal << 8) | ((*m & 0x0800) ? 8 : 0) | flip;
@@ -115,15 +118,25 @@ static void load_cols(u8 img, u16 spr, u8 shine, u8 fixed, u8 flip) {
             *REG_VRAMRW = TILE_UI;
             *REG_VRAMRW = 0;
         }
-        spr_shape(spr + c, 0, 0, im->h, c != 0);
+        // columnas pegadas: zoom pleno + bit sticky, sin tocar su posición
+        if (c) spr_shape(spr + c, 0, 0, 0, 1);
     }
+    // el líder queda en zoom pleno pero OCULTO (alto 0) y conserva su x:
+    // recargar tiles nunca mueve ni muestra el sprite. Antes se escribía en
+    // (0,0) con alto pleno y el logo asomaba un frame en la esquina de arriba
+    // a la izquierda hasta el siguiente ui_place/ui_put, que lo vuelve a mostrar.
+    *REG_VRAMMOD = 0x200;
+    *REG_VRAMADDR = ADDR_SCB2 + spr;
+    *REG_VRAMRW = 0x0fff;
+    *REG_VRAMRW = 0;
     // cortar la cadena después de la última columna
     spr_shape(spr + im->w, 0, 0, 0, 0);
 }
 
-void ui_load(u8 img, u16 spr, u8 shine) { load_cols(img, spr, shine, 0, 0); }
-void ui_load_flip(u8 img, u16 spr, u8 flip) { load_cols(img, spr, 1, 0, flip); }
-void ui_load_as(u8 img, u16 spr, u8 pal) { load_cols(img, spr, 0, pal, 0); }
+void ui_load(u8 img, u16 spr, u8 shine) { load_cols(img, spr, shine, 0, 0, 0); }
+void ui_load_flip(u8 img, u16 spr, u8 flip) { load_cols(img, spr, 1, 0, flip, 0); }
+void ui_load_as(u8 img, u16 spr, u8 pal) { load_cols(img, spr, 0, pal, 0, 0); }
+void ui_load_pal(u8 img, u16 spr, u8 pal_base, u8 flip) { load_cols(img, spr, 0, 0, flip, pal_base); }
 
 void ui_place(u8 img, u16 spr, s16 cx, s16 cy, u8 hz, u8 vz) {
     const uiimg_t *im = &ui_imgs[img];
@@ -136,6 +149,11 @@ void ui_place(u8 img, u16 spr, s16 cx, s16 cy, u8 hz, u8 vz) {
 }
 
 void ui_hide(u16 spr) { spr_hide(spr); }
+
+s16 ui_mirror_x(u8 img) {
+    const uiimg_t *im = &ui_imgs[img];
+    return SCREEN_W - im->x - (s16)im->w * 16;
+}
 
 void ui_put(u8 img, u16 spr, s16 dx, s16 dy) {
     const uiimg_t *im = &ui_imgs[img];

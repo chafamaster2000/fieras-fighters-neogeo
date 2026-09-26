@@ -33,6 +33,16 @@
 #define SPR_FIRE     245  // fuego de FIERAS sobre el título: hasta 20 columnas + corte
 #define SPR_PORTRAIT 248  // retratos del selector: 4 columnas cada uno
 #define SPR_CURSOR   296  // 2 cursores x 4 columnas (+ corte)
+// --- selector: fondo VS y bustos por lado (front.c) ---
+// Mismo rango que el fondo del título (no conviven). Orden de atrás hacia
+// adelante: fondo 1-21, bustos 24-46, luchadores 156-175, retratos 248+,
+// cursores 296+, texto en el fix.
+#define SPR_SBG      1    // degradé VS: 20 columnas + corte
+#define SPR_SBUST    24   // busto del lado s en SPR_SBUST + s * SPR_SBUST_N
+#define SPR_SBUST_N  12   // hasta 10 columnas + corte (+1 de margen)
+#define PAL_SBUST    240  // paletas del busto del lado s: PAL_SBUST + s * PAL_SBUST_N
+#define PAL_SBUST_N  4
+// --- fin selector ---
 
 // Paletas
 #define PAL_TEXT     0

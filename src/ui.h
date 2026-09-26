@@ -23,6 +23,13 @@ void ui_load(u8 img, u16 spr, u8 shine);
 void ui_load_flip(u8 img, u16 spr, u8 flip);
 // Igual que ui_load pero con todos los tiles en la paleta de hardware `pal`.
 void ui_load_as(u8 img, u16 spr, u8 pal);
+// Paletas normales (sin brillo por columna) reubicadas desde la paleta de
+// hardware `pal_base` (0 = las de la imagen), con espejo opcional: flip=1
+// invierte el orden de las columnas y prende el bit de espejo de cada tile.
+void ui_load_pal(u8 img, u16 spr, u8 pal_base, u8 flip);
+// x de la esquina izquierda de la imagen espejada en su lienzo de 320:
+// 320 - x - ancho (para ubicarla con spr_move)
+s16 ui_mirror_x(u8 img);
 void ui_place(u8 img, u16 spr, s16 cx, s16 cy, u8 hz, u8 vz);
 void ui_hide(u16 spr);
 // Sin zoom, en su posición del lienzo original más (dx, dy)

@@ -9,7 +9,7 @@
 /* los tiles de la UI van después de los dos personajes */
 #define TILE_UI (TILE_END + CHAR_P1_TILES + CHAR_P2_TILES)
 #define UI_TILES 1072
-#define UI_PALS 26
+#define UI_PALS 24
 #define UI_NLOGOS 1
 #define UI_ROSTER 2
 #define UI_HAS_FIRE 1
