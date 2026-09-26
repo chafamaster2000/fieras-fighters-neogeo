@@ -25,7 +25,7 @@ BUILDDIR=build
 # all directories that contain source to be compiled
 SRCDIRS=assets src
 # default build flags, can be overriden per target
-CFLAGS=-I$(BUILDDIR) -Isrc -std=c99 -fomit-frame-pointer -O2 -g -Wall
+CFLAGS=-I$(BUILDDIR) -Isrc -std=c99 -fomit-frame-pointer -O2 -g -Wall -Werror=overflow
 LDFLAGS=
 Z80FLAGS=
 Z80LDFLAGS=

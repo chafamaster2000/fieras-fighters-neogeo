@@ -54,7 +54,7 @@ typedef struct { s8 x, y, w, h; } box_t;      // relativa al ancla, mirando a la
 
 typedef struct {
     u16 first;      // primera entrada en tiles[], por columnas (h entradas cada una)
-    s8 x0, y0;      // esquina superior izquierda relativa al ancla, en px
+    s16 x0, y0;     // esquina superior izquierda relativa al ancla, en px (puede pasar de -128)
     u8 w, h;        // columnas y filas de tiles
 } cimg_t;
 

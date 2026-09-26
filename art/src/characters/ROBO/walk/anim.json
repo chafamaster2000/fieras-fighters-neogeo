@@ -1,0 +1,45 @@
+{
+ "frames": [
+  {
+   "file": "00.png",
+   "dur": 8,
+   "flags": []
+  },
+  {
+   "file": "01.png",
+   "dur": 7,
+   "flags": []
+  },
+  {
+   "file": "02.png",
+   "dur": 8,
+   "flags": []
+  },
+  {
+   "file": "03.png",
+   "dur": 7,
+   "flags": []
+  },
+  {
+   "file": "04.png",
+   "dur": 8,
+   "flags": []
+  },
+  {
+   "file": "05.png",
+   "dur": 7,
+   "flags": []
+  },
+  {
+   "file": "06.png",
+   "dur": 8,
+   "flags": []
+  },
+  {
+   "file": "07.png",
+   "dur": 7,
+   "flags": []
+  }
+ ],
+ "loop": true
+}

@@ -1,0 +1,277 @@
+{
+ "anchor": [
+  96,
+  124
+ ],
+ "anims": {
+  "IDLE": {
+   "src": "idle",
+   "seq": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "dur": [
+    10,
+    10,
+    10,
+    10,
+    10
+   ],
+   "flags": [
+    "",
+    "",
+    "",
+    "",
+    ""
+   ],
+   "loop": true
+  },
+  "WALK_F": {
+   "src": "walk",
+   "seq": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "dur": [
+    8,
+    7,
+    8,
+    7,
+    8,
+    7,
+    8,
+    7
+   ],
+   "flags": [
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+   ],
+   "loop": true
+  },
+  "PUNCH": {
+   "src": "punch",
+   "seq": [
+    0,
+    1,
+    2
+   ],
+   "dur": [
+    4,
+    8,
+    7
+   ],
+   "flags": [
+    "",
+    "ACTIVE",
+    ""
+   ],
+   "loop": false
+  },
+  "KICK": {
+   "src": "kick",
+   "seq": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "dur": [
+    6,
+    10,
+    6,
+    5
+   ],
+   "flags": [
+    "",
+    "ACTIVE",
+    "",
+    ""
+   ],
+   "loop": false
+  },
+  "HIT": {
+   "src": "hit",
+   "seq": [
+    0,
+    1,
+    2
+   ],
+   "dur": [
+    8,
+    8,
+    6
+   ],
+   "flags": [
+    "",
+    "",
+    ""
+   ],
+   "loop": false
+  },
+  "KNOCKDOWN": {
+   "src": "knockdown",
+   "seq": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "dur": [
+    5,
+    5,
+    6,
+    40,
+    8
+   ],
+   "flags": [
+    "",
+    "",
+    "",
+    "",
+    ""
+   ],
+   "loop": false
+  },
+  "WIN": {
+   "src": "win",
+   "seq": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "dur": [
+    6,
+    8,
+    12,
+    40
+   ],
+   "flags": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "loop": false
+  },
+  "KO": {
+   "src": "knockdown",
+   "seq": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "dur": [
+    5,
+    5,
+    6,
+    40
+   ],
+   "flags": [
+    "",
+    "",
+    "",
+    ""
+   ],
+   "loop": false
+  },
+  "FIREBALL": {
+   "src": "punch",
+   "seq": [
+    0,
+    1,
+    1,
+    2
+   ],
+   "dur": [
+    8,
+    4,
+    14,
+    8
+   ],
+   "flags": [
+    "",
+    "SPAWN",
+    "",
+    ""
+   ],
+   "loop": false,
+   "_tmp": "reusa punch hasta tener arte propio"
+  },
+  "BLOCK": {
+   "src": "idle",
+   "seq": [
+    0
+   ],
+   "dur": [
+    60
+   ],
+   "flags": [
+    ""
+   ],
+   "loop": true,
+   "_tmp": "reusa idle hasta tener arte propio"
+  },
+  "CBLOCK": {
+   "src": "crouch",
+   "seq": [
+    1
+   ],
+   "dur": [
+    60
+   ],
+   "flags": [
+    ""
+   ],
+   "loop": true,
+   "_tmp": "reusa crouch"
+  },
+  "CPUNCH": {
+   "src": "crouch",
+   "seq": [
+    0,
+    1,
+    0
+   ],
+   "dur": [
+    3,
+    3,
+    6
+   ],
+   "flags": [
+    "",
+    "ACTIVE|LOW",
+    ""
+   ],
+   "loop": false,
+   "hit": [
+    null,
+    [
+     8,
+     -66,
+     52,
+     22
+    ],
+    null
+   ],
+   "_tmp": "reusa crouch con caja baja hasta tener arte propio"
+  }
+ }
+}

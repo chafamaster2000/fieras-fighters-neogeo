@@ -1,9 +1,9 @@
 {
  "character": "ROBO",
- "stand_height_px": 114,
- "stand_height_frac": 0.509,
+ "stand_height_px": 117,
+ "stand_height_frac": 0.522,
  "feet_row_in_canvas": 124,
  "anchor_row": 124,
- "idle_frames": 4,
- "walk_frames": 6
+ "idle_frames": 5,
+ "walk_frames": 8
 }

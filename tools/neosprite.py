@@ -35,6 +35,9 @@ import make_assets as MA  # noqa: E402  (constantes del escenario, packed15)
 # Nombre -> ranura en la C-ROM. P1 va primero, P2 a continuación.
 SLOTS = {"ROBO": "p1", "NINJA": "p2"}
 PROC_DIR = os.path.join(ROOT, "art", "tmp-procedural")
+# frame data del juego (tools/framedata.json): pisa las duraciones del arte en los golpes
+_fd = os.path.join(os.path.dirname(os.path.abspath(__file__)), "framedata.json")
+FRAMEDATA = {k: v for k, v in (json.load(open(_fd)) if os.path.exists(_fd) else {}).items() if not k.startswith("_")}
 TARGET_H = (110, 118)          # alto parado aceptado sin reescalar (KOF)
 TARGET_H_DEFAULT = 114
 ALPHA_MIN = 128
@@ -822,6 +825,9 @@ def from_meta(anim, src, ent):
         steps, loop = timing(anim, seq, a)
         if "loop" in ent:
             loop = bool(ent["loop"])
+    fd = FRAMEDATA.get(anim)
+    if fd and len(fd.get("dur", [])) == len(steps):
+        steps = [(i, d, fl) for (i, _, fl), d in zip(steps, fd["dur"])]
     tag = "fallback " if src.fallback else ""
     hit = ent.get("hit")
     if hit is not None and len(hit) != len(steps):

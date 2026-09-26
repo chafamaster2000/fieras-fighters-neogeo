@@ -1,0 +1,5 @@
+{
+  "_doc": "Frame data del JUEGO: pisa las duraciones que traiga el arte (anims.json) cuando el largo coincide. El arte decide cómo se ve; esto decide los tiempos de juego (arranque, activo, recuperación). A 60 fps.",
+  "PUNCH": {"dur": [3, 3, 6]},
+  "KICK":  {"dur": [5, 4, 6, 5]}
+}
