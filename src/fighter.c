@@ -25,7 +25,7 @@ const attack_t *fighter_attack(const fighter_t *f) {
 }
 
 const frame_t *fighter_frame(const fighter_t *f) {
-    return &fighter_frames[fighter_anims[f->anim].first + f->fidx];
+    return &f->ch->frames[f->ch->anims[f->anim].first + f->fidx];
 }
 
 void fighter_set_anim(fighter_t *f, u8 anim) {
@@ -40,7 +40,7 @@ static void advance_anim(fighter_t *f) {
     f->entered = 0;
     if (f->anim_done) return;
     if (--f->ftimer) return;
-    const anim_t *a = &fighter_anims[f->anim];
+    const anim_t *a = &f->ch->anims[f->anim];
     if (f->fidx + 1 < a->count) {
         f->fidx++;
     } else if (a->loop) {
@@ -54,14 +54,16 @@ static void advance_anim(fighter_t *f) {
     f->entered = 1;
 }
 
-void fighter_init(fighter_t *f, u8 id, u16 spr, u8 pal) {
+void fighter_init(fighter_t *f, u8 id, u16 spr, u8 pal, const character_t *ch) {
     f->id = id;
     f->spr = spr;
     f->pal = pal;
+    f->ch = ch;
     f->wins = 0;
     f->cpu = 1;
     f->hits_landed = f->hits_blocked = f->specials = f->max_combo = 0;
-    for (u8 c = 0; c < FIGHTER_COLS; c++) spr_shape(spr + c, 0, 0, FIGHTER_ROWS, c != 0);
+    for (u8 c = 0; c < FIGHTER_HW_COLS; c++) spr_shape(spr + c, 0, 0, 0, 0);
+    f->drawn_w = 0;
 }
 
 void fighter_reset_round(fighter_t *f, s16 x, s8 facing) {
@@ -78,7 +80,7 @@ void fighter_reset_round(fighter_t *f, s16 x, s8 facing) {
     for (u8 i = 0; i < 16; i++) f->dirbuf[i] = 5;
     f->ai_timer = f->ai_seq_len = f->ai_seq_pos = 0;
     f->combo = 0;
-    f->drawn_tmap = -1;
+    f->drawn_img = -1;
     fighter_set_anim(f, ANIM_IDLE);
 }
 
@@ -273,16 +275,29 @@ void fighter_world_box(const fighter_t *f, const box_t *b, s16 *x0, s16 *y0, s16
 
 void fighter_draw(fighter_t *f, s16 cam_x, s8 shake) {
     const frame_t *fr = fighter_frame(f);
-    if (fr->tmap != f->drawn_tmap || f->facing != f->drawn_facing) {
-        const u16 *map = fighter_tmaps[fr->tmap];
-        for (u8 c = 0; c < FIGHTER_COLS; c++) {
-            u8 src = f->facing > 0 ? c : FIGHTER_COLS - 1 - c;
-            spr_column(f->spr + c, &map[src], FIGHTER_ROWS, FIGHTER_COLS, f->pal, f->facing < 0);
+    const character_t *ch = f->ch;
+    const cimg_t *im = &ch->imgs[fr->img];
+    if (fr->img != f->drawn_img || f->facing != f->drawn_facing) {
+        // Solo cambia SCB1 cuando cambia la imagen: w columnas de h tiles.
+        // Mirando a la izquierda se invierte el orden de columnas y el flip H.
+        u8 flip = f->facing < 0;
+        for (u8 c = 0; c < im->w; c++) {
+            u8 src = flip ? im->w - 1 - c : c;
+            spr_column_ct(f->spr + c, &ch->tiles[im->first + src * im->h], im->h, ch->tile_base, f->pal, flip);
         }
-        f->drawn_tmap = fr->tmap;
+        if (im->w != f->drawn_w) {
+            // ancho variable (como KOF): las columnas de más se sueltan de la
+            // cadena y quedan con alto 0, así no cuentan en el límite por línea
+            *REG_VRAMMOD = 1;
+            *REG_VRAMADDR = ADDR_SCB3 + f->spr + 1;
+            for (u8 c = 1; c < FIGHTER_HW_COLS; c++) *REG_VRAMRW = c < im->w ? (1 << 6) : 0;
+            f->drawn_w = im->w;
+        }
+        f->drawn_img = fr->img;
         f->drawn_facing = f->facing;
     }
-    s16 sx = PX(f->x) - cam_x - FIGHTER_AX + shake;
-    s16 sy = FLOOR_Y + PX(f->y) - FIGHTER_AY;
-    spr_move(f->spr, sx, sy, FIGHTER_ROWS);
+    s16 x = PX(f->x) - cam_x + shake;
+    s16 sx = f->facing > 0 ? x + im->x0 : x - im->x0 - (s16)im->w * 16;
+    s16 sy = FLOOR_Y + PX(f->y) + im->y0;
+    spr_move(f->spr, sx, sy, im->h);
 }

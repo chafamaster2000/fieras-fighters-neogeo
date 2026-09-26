@@ -2,6 +2,7 @@
 #define FIGHTER_H
 #include <ngdevkit/types.h>
 #include "gen/assets.h"
+#include "character.h"
 
 // Posiciones en punto fijo 24.8. y = 0 es el piso, negativo = arriba.
 #define FP(px)        ((s32)(px) << 8)
@@ -46,10 +47,12 @@ typedef struct {
     u8 ai_timer, ai_hold, ai_seq_len, ai_seq_pos;
     u8 ai_seq[12];
     u16 hits_landed, hits_blocked, specials, combo, max_combo;
-    s16 drawn_tmap;
+    s16 drawn_img;
     s8 drawn_facing;
+    u8 drawn_w;
     u16 spr;
     u8 pal;
+    const character_t *ch;
 } fighter_t;
 
 typedef struct {
@@ -59,7 +62,7 @@ typedef struct {
     u8 sfx;
 } attack_t;
 
-void fighter_init(fighter_t *f, u8 id, u16 spr, u8 pal);
+void fighter_init(fighter_t *f, u8 id, u16 spr, u8 pal, const character_t *ch);
 void fighter_reset_round(fighter_t *f, s16 x, s8 facing);
 void fighter_set_anim(fighter_t *f, u8 anim);
 const frame_t *fighter_frame(const fighter_t *f);

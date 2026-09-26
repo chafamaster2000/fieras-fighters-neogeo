@@ -13,9 +13,9 @@
 // Índices de sprite (SCB). Mayor índice = se dibuja encima.
 #define SPR_STAGE    1    // 7 capas x 21 columnas: 1..147
 #define SPR_SHADOW   150  // 2 luchadores x 2 columnas
-#define SPR_FIGHTER  156  // 2 luchadores x 7 columnas (P2 156.., P1 163..)
-#define SPR_PROJ     172  // 2 proyectiles x 3 columnas
-#define SPR_SPARK    178  // 2 chispas x 2 columnas
+#define SPR_FIGHTER  156  // 2 luchadores x FIGHTER_HW_COLS (10) columnas: P2 156.., P1 166..
+#define SPR_PROJ     178  // 2 proyectiles x 3 columnas
+#define SPR_SPARK    184  // 2 chispas x 2 columnas
 #define SPR_MSG      190  // mensajes grandes: hasta 12 letras x 2 columnas
 
 // Paletas
@@ -29,6 +29,7 @@
 #define PAL_FX       21
 #define PAL_MSG      22
 #define PAL_PROJ     23
+#define PAL_CROWD    24
 
 static inline u16 scb3(s16 y, u8 height) {
     return (u16)((((496 - y) & 0x1ff) << 7) | (height & 0x3f));
@@ -63,6 +64,19 @@ static inline void spr_column(u16 spr, const u16 *tiles, u8 count, u16 stride, u
     for (u8 i = 0; i < count; i++) {
         *REG_VRAMRW = tiles[i * stride];
         *REG_VRAMRW = attr;
+    }
+}
+
+// Columna de un personaje: entradas con flips propios (ver character.h),
+// desplazadas a tile_base. flip invierte el flip horizontal de cada tile.
+static inline void spr_column_ct(u16 spr, const u16 *e, u8 count, u16 tile_base, u8 pal, u8 flip) {
+    *REG_VRAMMOD = 1;
+    *REG_VRAMADDR = ADDR_SCB1 + spr * 64;
+    u16 attr = (u16)pal << 8;
+    for (u8 i = 0; i < count; i++) {
+        u16 v = e[i];
+        *REG_VRAMRW = tile_base + (v & 0x3fff);
+        *REG_VRAMRW = attr | ((v >> 14) ^ flip);
     }
 }
 

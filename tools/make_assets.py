@@ -2,17 +2,22 @@
 """Genera TODOS los assets placeholder del prototipo de pelea.
 
 Salida (determinística, se versiona):
-  assets/fighter.gif   tiles únicos del luchador (grilla de 16 tiles de ancho)
+  art/tmp-procedural/<NOMBRE>/  poses del luchador procedural en PNG + anims.json
+                       (mismo formato que entrega el arte; lo convierte
+                       tools/neosprite.py en assets/char_p1.gif y src/gen/char_p1.c)
   assets/fx.gif        bola de energía, chispa de impacto y sombra
   assets/sky.gif       capa lejana (parallax 1/4)
   assets/city.gif      capa media: edificios y público (parallax 1/2)
   assets/street.gif    capa cercana: piso en perspectiva (parallax 1)
   assets/hud.gif       tiles 8x8 del fix layer: barras de vida y dígitos grandes
-  src/gen/assets.h     tiles base, dimensiones de capas, enums de animación
-  src/gen/assets.c     paletas, tilemaps por frame, animaciones y cajas
+  src/gen/assets.h     tiles base, dimensiones de capas
+  src/gen/assets.c     paletas de efectos, HUD y mensajes
+  src/gen/stage_gen.c  paletas del escenario y mapa de la ciudad con el público animado
 
 El orden de la C-ROM lo define el Makefile y tiene que coincidir con TILE_* acá:
-  logo del BIOS (256) -> fighter -> fx -> sky -> city -> street
+  logo del BIOS (256) -> fx -> proj -> sky -> floor0..4 -> font -> city (con público) -> TILE_END
+  -> personajes (char_p1, char_p2: los arma tools/neosprite.py a partir de TILE_END)
+Uso: make_assets.py [--poses-only]  (--poses-only: solo exporta las poses procedurales)
 Reglas del formato: GIF indexado, índice 0 transparente, tiles 16x16 fila por fila.
 
 El arte final lo reemplaza el autor; este script solo existe para que el
@@ -330,27 +335,73 @@ ANIMS = [
 ]
 
 
-def build_fighter(tile_base):
-    uniq = {}
-    tiles = []
+# Carpeta y número de frame de cada pose al exportarla (mismo contrato que el
+# arte final, ver tools/README-neosprite.md). Cada animación toma sus poses de
+# una sola carpeta; las poses compartidas (k_start, kd0...) se reusan con seq.
+POSE_SRC = {
+    "idle0": ("idle", 0), "idle1": ("idle", 1), "idle2": ("idle", 2),
+    "crouch_t": ("crouch_t", 0), "crouch": ("crouch", 0), "prejump": ("prejump", 0),
+    "air_up": ("jump", 0), "air_down": ("jump", 1),
+    "p_start": ("punch", 0), "p_active": ("punch", 1), "p_recover": ("punch", 2),
+    "k_start": ("kick", 0), "k_active": ("kick", 1),
+    "cp_start": ("cpunch", 0), "cp_active": ("cpunch", 1),
+    "jk_active": ("jkick", 0),
+    "fb_wind": ("fireball", 0), "fb_release": ("fireball", 1),
+    "block": ("block", 0), "cblock": ("cblock", 0),
+    "hit0": ("hit", 0), "hit1": ("hit", 1), "chit": ("chit", 0),
+    "kd0": ("knockdown", 0), "kd1": ("knockdown", 1), "lying": ("knockdown", 2), "getup": ("knockdown", 3),
+    "win0": ("win", 0), "win1": ("win", 1),
+}
+POSE_SRC.update({"walk%d" % i: ("walk", i) for i in range(6)})
+FLAG_NAMES = [(F_ACTIVE, "ACTIVE"), (F_LOW, "LOW"), (F_OVERHEAD, "OVERHEAD"), (F_SPAWN, "SPAWN")]
 
-    def tid(t):
-        k = tile_key(t)
-        if k not in uniq:
-            uniq[k] = len(tiles)
-            tiles.append(t)
-        return uniq[k]
+# personajes procedurales: nombre -> paleta (P2 es un palette swap, como hoy)
+PROCEDURAL_CHARS = {"ROBO": FIGHTER_PAL, "NINJA": FIGHTER_PAL_P2}
+PROC_DIR = os.path.join(ROOT, "art", "tmp-procedural")
+EXPORT_W = 176
 
-    tid(new_p(16, 16, FIGHTER_PAL))           # tile 0 del set = vacío
-    pose_frames = {}
-    for name, pose in POSES.items():
-        img, j = draw_pose(pose)
-        tmap = [tile_base + tid(t) for t in tiles_of(img)]
-        upper = box_around([j["head"], j["neck"], j["hip"], j["elf"], j["elb"]], 6)
-        lower = box_around([j["hip"], j["knf"], j["knb"], j["anf"], j["anb"]], 6)
-        pose_frames[name] = (tmap, j, rel(upper), rel(lower))
-    sheet, used = grid_sheet(tiles, FIGHTER_PAL)
-    return sheet, used, pose_frames
+
+def export_procedural(name, pal, root=PROC_DIR):
+    """Exporta las poses como PNG RGBA de 112x128 (fondo transparente, cámara
+    fija, ancla en 56,124) y un anims.json con duraciones y flags."""
+    import json
+    import shutil
+    out = os.path.join(root, name)
+    if os.path.isdir(out):
+        shutil.rmtree(out)
+    rgba = [tuple(c) + (255,) for c in pad16(pal)]
+    rgba[0] = (0, 0, 0, 0)
+    # lienzo más ancho que el de 112 px original: el puño del golpe y el pie
+    # de la patada ya no se cortan en el borde (la hitbox sale del alfa)
+    global FW, AX
+    old = FW, AX
+    FW, AX = EXPORT_W, EXPORT_W // 2
+    for pose, (folder, idx) in POSE_SRC.items():
+        img, _ = draw_pose(POSES[pose])
+        d = os.path.join(out, folder)
+        os.makedirs(d, exist_ok=True)
+        rgb = Image.new("RGBA", img.size)
+        rgb.putdata([rgba[v] for v in img.tobytes()])
+        rgb.save(os.path.join(d, "%02d.png" % idx))
+    FW, AX = old
+    anims = {}
+    for aname, loop, seq, _limb in ANIMS:
+        folders = {POSE_SRC[p][0] for p, _, _ in seq}
+        assert len(folders) == 1, aname
+        anims[aname] = {
+            "src": folders.pop(),
+            "seq": [POSE_SRC[p][1] for p, _, _ in seq],
+            "dur": [d for _, d, _ in seq],
+            "flags": ["|".join(n for bit, n in FLAG_NAMES if fl & bit) for _, _, fl in seq],
+            "loop": bool(loop),
+        }
+    meta = {"_comment": "Generado por tools/make_assets.py (luchador procedural).",
+            "anchor": [EXPORT_W // 2, AY], "anims": anims}
+    with open(os.path.join(out, "anims.json"), "w") as fh:
+        fh.write('{\n "_comment": %s,\n "anchor": %s,\n "anims": {\n' % (json.dumps(meta["_comment"]), json.dumps(meta["anchor"])))
+        fh.write(",\n".join("  %s: %s" % (json.dumps(k), json.dumps(v)) for k, v in anims.items()))
+        fh.write("\n }\n}\n")
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -505,7 +556,13 @@ def build_sky():
     return img
 
 
+CROWD_Y, CROWD_H, CROWD_FRAMES = 96, 56, 4      # público: filas 96..151 de city (pantalla 112..167)
+
+
 def build_city():
+    """Devuelve (base, [4 cuadros de público]) en RGBA: la base es la ciudad
+    sin gente; cada cuadro del público es de 416x56 con transparencia. Los
+    compone y los auto-anima tools/neosprite.py (build_city_layer)."""
     w, h = layer_cols(8) * 16, 10 * 16
     img = new_p(w, h, CITY_PAL, 0)
     d = ImageDraw.Draw(img)
@@ -527,20 +584,37 @@ def build_city():
     d.rectangle([bx + 3, 25, bx + 41, 55], fill=10)
     d.ellipse([bx + 10, 28, bx + 34, 52], outline=9, width=3)
     d.line([(bx + 22, 30), (bx + 22, 50)], fill=9, width=3)
-    # baranda y público (de 100 a 136)
+    # baranda
     d.rectangle([0, 128, w, 131], fill=7)
     for px in range(0, w, 12):
         d.line([(px, 131), (px, 150)], fill=7, width=2)
-    for px in range(4, w, 9):                                              # cabezas y cuerpos
-        py = 104 + rnd.randrange(-4, 5)
-        shirt = rnd.choice([7, 6, 11, 12, 3, 5])
-        d.rectangle([px - 4, py + 8, px + 4, 150], fill=shirt, outline=1)
-        d.ellipse([px - 4, py, px + 4, py + 9], fill=rnd.choice([12, 11, 12]), outline=1)
-        if rnd.random() < 0.3:                                             # brazos arriba
-            d.line([(px + 3, py + 9), (px + 7, py - 3)], fill=12, width=2)
     d.rectangle([0, 150, w, h], fill=14)
-    save_gif(img, "city.gif")
-    return img
+    state = rnd.getstate()
+    frames = []
+    for f in range(CROWD_FRAMES):                                          # público que salta y alienta
+        rnd.setstate(state)
+        cr = new_p(w, CROWD_H, CITY_PAL, 0)
+        cd = ImageDraw.Draw(cr)
+        for k, px in enumerate(range(4, w, 9)):
+            py = 104 + rnd.randrange(-4, 5) - CROWD_Y + [0, -1, -2, -1][(f + k) % 4]
+            shirt = rnd.choice([7, 6, 11, 12, 3, 5])
+            skin = rnd.choice([12, 11, 12])
+            r = rnd.random()
+            cd.rectangle([px - 4, py + 8, px + 4, 149 - CROWD_Y], fill=shirt, outline=1)
+            cd.ellipse([px - 4, py, px + 4, py + 9], fill=skin, outline=1)
+            if r < 0.3 or (r < 0.65 and (f + k // 3) % 4 in (1, 2)):      # brazos arriba (ola)
+                cd.line([(px + 3, py + 9), (px + 7, py - 3 - (f + k) % 2 * 2)], fill=12, width=2)
+        frames.append(to_rgba(cr, CITY_PAL))
+    return to_rgba(img, CITY_PAL, opaque0=False), frames
+
+
+def to_rgba(img, pal, opaque0=False):
+    rgba = [tuple(c) + (255,) for c in pad16(pal)]
+    if not opaque0:
+        rgba[0] = (0, 0, 0, 0)
+    out = Image.new("RGBA", img.size)
+    out.putdata([rgba[v] for v in img.tobytes()])
+    return out
 
 
 def floor_screen(sx, sy):
@@ -686,7 +760,7 @@ def build_hud():
 
 MSG_PAL = [(255, 0, 255), (16, 8, 16), (255, 255, 240), (255, 236, 90), (255, 170, 30),
            (230, 70, 20), (120, 20, 20), (60, 10, 20)]
-FONT_CHARS = " ABCDEFGHIKLMNOPRSTUVWXZ0123456789!."
+FONT_CHARS = " ABCDEFGHIJKLMNOPRSTUVWXZ0123456789!."
 GLYPHS = {
     "A": ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
     "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
@@ -697,6 +771,7 @@ GLYPHS = {
     "G": ["01111", "10000", "10000", "10011", "10001", "10001", "01111"],
     "H": ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
     "I": ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
+    "J": ["00111", "00010", "00010", "00010", "00010", "10010", "01100"],
     "K": ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
     "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
     "M": ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
@@ -767,20 +842,62 @@ def c_pal(name, pal):
     return "const u16 %s[16] = {%s};\n" % (name, ", ".join("0x%04x" % packed15(c) for c in pad16(pal)))
 
 
+def stage_gen():
+    """src/gen/stage_gen.c/.h: paletas del escenario (de los GIF de sky y
+    floor0, y de assets/city.json para la ciudad y el público) y el mapa de
+    tiles de la ciudad. Lo usa también tools/neosprite.py stage."""
+    import json
+    city = json.load(open(os.path.join(ASSETS, "city.json")))
+    out = ["/* Generado por tools/make_assets.py o tools/neosprite.py stage: no editar a mano. */\n",
+           '#include "gen/stage_gen.h"\n\n']
+    for var, gif in (("pal_sky", "sky.gif"), ("pal_street", "floor0.gif")):
+        img = Image.open(os.path.join(ASSETS, gif))
+        p = img.getpalette()[:48]
+        p += [0] * (48 - len(p))
+        out.append(c_pal(var, [tuple(p[i:i + 3]) for i in range(0, 48, 3)]))
+    out.append(c_pal("pal_city", [tuple(c) for c in city["pal_city"]]))
+    out.append(c_pal("pal_crowd", [tuple(c) for c in city["pal_crowd"]]))
+    m = city["map"]
+    out.append("\n/* ciudad: fila por fila; bits 0-13 tile desde TILE_CITY, bit 14 auto-animación\n"
+               "   de 4 cuadros, bit 15 paleta del público */\nconst u16 city_map[%d] = {\n" % len(m))
+    cols = city["cols"]
+    for i in range(0, len(m), cols):
+        out.append("    " + ", ".join("0x%04x" % v for v in m[i:i + cols]) + ",\n")
+    out.append("};\n")
+    open(os.path.join(GEN, "stage_gen.c"), "w").write("".join(out))
+    h = ["/* Generado por tools/make_assets.py o tools/neosprite.py stage: no editar a mano. */\n",
+         "#ifndef GEN_STAGE_GEN_H\n#define GEN_STAGE_GEN_H\n#include <ngdevkit/types.h>\n",
+         "#define CITY_TILES %d          /* tiles de city.gif en la C-ROM */\n" % city["tiles"],
+         "#define CROWD_ANIM_SPEED %d     /* REG_LSPCMODE: cuadro nuevo cada n+1 frames */\n" % city["speed"],
+         "#define CROWD_ANIM_TILES %d\n" % city["anim_groups"],
+         "extern const u16 city_map[%d];\n" % len(m),
+         "extern const u16 pal_sky[16], pal_city[16], pal_crowd[16], pal_street[16];\n#endif\n"]
+    open(os.path.join(GEN, "stage_gen.h"), "w").write("".join(h))
+
+
+def export_stage_sources(city_base, crowd):
+    d = os.path.join(PROC_DIR, "stage")
+    os.makedirs(os.path.join(d, "crowd"), exist_ok=True)
+    city_base.save(os.path.join(d, "city.png"))
+    for i, f in enumerate(crowd):
+        f.save(os.path.join(d, "crowd", "%02d.png" % i))
+
+
 def main():
+    import sys
+    for name, pal in PROCEDURAL_CHARS.items():
+        export_procedural(name, pal)
+    if "--poses-only" in sys.argv:
+        print("poses procedurales en", PROC_DIR)
+        return
     os.makedirs(GEN, exist_ok=True)
-    tile_fighter = 256
-    fsheet, fused, frames = build_fighter(tile_fighter)
-    save_gif(fsheet, "fighter.gif")
-    tile_fx = tile_fighter + fused
+    tile_fx = 256
     fx_used = build_fx(tile_fx)
     tile_proj = tile_fx + fx_used
     proj_used = build_proj()
     tile_sky = tile_proj + proj_used
     sky = build_sky()
-    tile_city = tile_sky + (sky.size[0] // 16) * (sky.size[1] // 16)
-    city = build_city()
-    tile_street = tile_city + (city.size[0] // 16) * (city.size[1] // 16)
+    tile_street = tile_sky + (sky.size[0] // 16) * (sky.size[1] // 16)
     build_street()
     floor_tiles = {}
     t = tile_street
@@ -789,94 +906,49 @@ def main():
         t += layer_cols(num) * rows
     tile_font = t
     font_n = build_font()
-    tile_end = tile_font + font_n * 4
+    tile_city = tile_font + font_n * 4
+    city_base, crowd = build_city()
+    export_stage_sources(city_base, crowd)
+    import neosprite
+    neosprite.build_city_layer(city_base, crowd, tile_city)
     hud_count = build_hud()
-
-    # ---------------------------------------------------------------- frames
-    pose_index = {}
-    frame_rows = []            # (tmap_idx, dur, flags, hit, hurt_u, hurt_l)
-    tmaps = []
-    anim_rows = []
-    for name, loop, seq, limb in ANIMS:
-        first = len(frame_rows)
-        for pose, dur, flags in seq:
-            tmap, j, up, lo = frames[pose]
-            if pose not in pose_index:
-                pose_index[pose] = len(tmaps)
-                tmaps.append(tmap)
-            hit = (0, 0, 0, 0)
-            if flags & F_ACTIVE and limb:
-                # la caja cubre la extremidad activa entera, no solo la punta:
-                # así el golpe conecta también cuerpo a cuerpo (como en KOF)
-                side = limb[-1]
-                if limb.startswith("toe"):
-                    hit = rel(box_around([j[limb], j["an" + side], j["kn" + side]], 5))
-                else:
-                    hit = rel(box_around([j[limb], j["el" + side], j["sh" + side]], 6))
-            frame_rows.append((pose_index[pose], dur, flags, hit, up, lo))
-        anim_rows.append((name, first, len(seq), loop))
 
     h = []
     h.append("/* Generado por tools/make_assets.py: no editar a mano. */\n")
     h.append("#ifndef GEN_ASSETS_H\n#define GEN_ASSETS_H\n#include <ngdevkit/types.h>\n\n")
-    h.append("#define TILE_FIGHTER %d\n#define TILE_FX %d\n#define TILE_PROJ %d\n#define TILE_SKY %d\n#define TILE_CITY %d\n#define TILE_STREET %d\n#define TILE_FONT %d\n#define TILE_END %d\n\n"
-             % (tile_fighter, tile_fx, tile_proj, tile_sky, tile_city, tile_street, tile_font, tile_end))
+    h.append('#include "gen/stage_gen.h"\n\n')
+    h.append("/* orden de la C-ROM (Makefile CROM_PARTS): fx proj sky floor0..4 font city char_p1 char_p2.\n"
+             "   city.gif empieza con relleno para que sus grupos animados queden alineados a 4.\n"
+             "   TILE_END: primer tile libre; ahí empiezan los personajes (src/gen/char_p1.c) */\n")
+    h.append("#define TILE_FX %d\n#define TILE_PROJ %d\n#define TILE_SKY %d\n#define TILE_STREET %d\n#define TILE_FONT %d\n#define TILE_CITY %d\n#define TILE_END (TILE_CITY + CITY_TILES)\n\n"
+             % (tile_fx, tile_proj, tile_sky, tile_street, tile_font, tile_city))
     h.append("/* fuente de mensajes: glifo i ocupa 2x2 tiles; fila de abajo a FONT_GLYPHS*2 */\n#define FONT_GLYPHS %d\nextern const u8 font_map[96];\n\n" % font_n)
     h.append("/* efectos: tiles de 16x16 en fx.gif (2 filas de %d) */\n" % ((32 * 7 + 32) // 16))
     h.append("#define FX_ROW %d\n#define FX_FIREBALL 0\n#define FX_SPARK 6\n#define FX_SHADOW 12\n#define FX_BLOCK 14\n\n" % ((32 * 7 + 32) // 16))
-    h.append("#define FIGHTER_PX_W %d\n#define FIGHTER_PX_H %d\n#define FIGHTER_COLS %d\n#define FIGHTER_ROWS %d\n#define FIGHTER_AX %d\n#define FIGHTER_AY %d\n\n"
-             % (FW, FH, FCOLS, FROWS, AX, AY))
     h.append("#define CAM_RANGE %d\n#define NUM_LAYERS %d\n" % (CAM_RANGE, len(LAYERS)))
     tbase = {"sky": tile_sky, "city": tile_city}
     tbase.update(floor_tiles)
-    h.append("/* capas: tile base, columnas, filas, ratio (dieciseisavos de la cámara), y */\n#define LAYER_TABLE \\\n")
+    h.append("/* capas: tile base, columnas, filas, ratio (dieciseisavos de la cámara), y.\n"
+             "   La ciudad (capa 1) usa city_map en vez de tiles consecutivos. */\n#define LAYER_CITY 1\n#define LAYER_TABLE \\\n")
     for n, num, ht, y in LAYERS:
-        h.append("    {%d, %d, %d, %d, %d}, \\\n" % (tbase[n], layer_cols(num), ht, num, y))
+        h.append("    {%s, %d, %d, %d, %d}, \\\n" % ("TILE_CITY" if n == "city" else tbase[n], layer_cols(num), ht, num, y))
     h.append("\n#define STAGE_W %d\n" % (320 + CAM_RANGE))
     h.append("\n#define HUD_TILES %d\n#define HUD_BAR_SOLID %d\n#define HUD_BAR_EDGE %d\n"
              "/* pares de borde: ED DF EF FD DE FE */\n"
              "#define HUD_CAP_L %d\n#define HUD_CAP_R %d\n#define HUD_WIN_OFF %d\n#define HUD_WIN_ON %d\n#define HUD_DIGITS %d\n#define HUD_MEDAL %d\n\n"
              % (hud_count, HUD_BAR_SOLID, HUD_BAR_EDGE, HUD_CAP_L, HUD_CAP_R, HUD_WIN_OFF, HUD_WIN_ON, HUD_DIGITS, HUD_MEDAL))
-    h.append("#define FF_ACTIVE %d\n#define FF_LOW %d\n#define FF_OVERHEAD %d\n#define FF_SPAWN %d\n\n" % (F_ACTIVE, F_LOW, F_OVERHEAD, F_SPAWN))
-    h.append("enum {\n" + "".join("    ANIM_%s,\n" % a[0] for a in ANIMS) + "    ANIM_COUNT\n};\n\n")
-    h.append("typedef struct { s8 x, y, w, h; } box_t;\n")
-    h.append("typedef struct {\n    u16 tmap;       /* índice en fighter_tmaps */\n    u8 dur;\n    u8 flags;\n"
-             "    box_t hit;      /* w == 0: sin hitbox */\n    box_t hurt_hi;\n    box_t hurt_lo;\n} frame_t;\n")
-    h.append("typedef struct { u16 first; u8 count; u8 loop; } anim_t;\n\n")
-    h.append("extern const u16 fighter_tmaps[][%d];\nextern const frame_t fighter_frames[];\nextern const anim_t fighter_anims[];\n" % (FCOLS * FROWS))
-    h.append("extern const u16 pal_fighter_p1[16], pal_fighter_p2[16], pal_fx[16], pal_proj[16], pal_sky[16], pal_city[16], pal_street[16], pal_hud[16], pal_msg[16];\n")
+    h.append("extern const u16 pal_fx[16], pal_proj[16], pal_hud[16], pal_msg[16];\n")
     h.append("\n#endif\n")
     open(os.path.join(GEN, "assets.h"), "w").write("".join(h))
 
     c = ["/* Generado por tools/make_assets.py: no editar a mano. */\n#include \"assets.h\"\n\n"]
-    for name, pal in (("pal_fighter_p1", FIGHTER_PAL), ("pal_fighter_p2", FIGHTER_PAL_P2), ("pal_fx", FX_PAL), ("pal_proj", PROJ_PAL),
-                      ("pal_sky", SKY_PAL), ("pal_city", CITY_PAL), ("pal_street", STREET_PAL), ("pal_hud", HUD_PAL), ("pal_msg", MSG_PAL)):
+    for name, pal in (("pal_fx", FX_PAL), ("pal_proj", PROJ_PAL), ("pal_hud", HUD_PAL), ("pal_msg", MSG_PAL)):
         c.append(c_pal(name, pal))
-    c.append("\nconst u16 fighter_tmaps[][%d] = {\n" % (FCOLS * FROWS))
-    for t in tmaps:
-        c.append("    {" + ", ".join(str(v) for v in t) + "},\n")
-    c.append("};\n\nconst frame_t fighter_frames[] = {\n")
-    for tm, dur, fl, hit, up, lo in frame_rows:
-        c.append("    {%d, %d, %d, {%d, %d, %d, %d}, {%d, %d, %d, %d}, {%d, %d, %d, %d}},\n"
-                 % ((tm, dur, fl) + hit + up + lo))
-    c.append("};\n\nconst anim_t fighter_anims[] = {\n")
-    for name, first, count, loop in anim_rows:
-        c.append("    {%d, %d, %d},  /* %s */\n" % (first, count, loop, name))
-    c.append("};\n")
     fm = [FONT_CHARS.index(chr(i)) if chr(i) in FONT_CHARS else 0 for i in range(32, 128)]
     c.append("\nconst u8 font_map[96] = {" + ", ".join(str(v) for v in fm) + "};\n")
     open(os.path.join(GEN, "assets.c"), "w").write("".join(c))
-
-    import json
-    idle, _ = draw_pose(POSES["idle0"])
-    bbox = idle.point(lambda v: 255 if v else 0).getbbox()
-    metrics = {"stand_height_px": bbox[3] - bbox[1], "stand_height_frac": round((bbox[3] - bbox[1]) / 224, 3),
-               "feet_row_in_canvas": bbox[3], "anchor_row": AY,
-               "idle_frames": len(ANIMS[0][2]), "walk_frames": len(ANIMS[1][2])}
-    open(os.path.join(ASSETS, "metrics.json"), "w").write(json.dumps(metrics, indent=1))
-
-    print("tiles: fighter %d (+relleno=%d), fx %d, fin %d; hud %d; poses %d, frames %d"
-          % (len(frames), fused, fx_used, tile_end, hud_count, len(tmaps), len(frame_rows)))
+    print("tiles: fx %d, proj %d, ciudad desde %d; hud %d; poses y escenario procedurales en %s"
+          % (fx_used, proj_used, tile_city, hud_count, PROC_DIR))
 
 
 if __name__ == "__main__":

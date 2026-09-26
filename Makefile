@@ -84,9 +84,11 @@ $(SROM1): $(BUILDDIR)/assets/base-srom-text-shadow.fix $(BUILDDIR)/assets/hud.fi
 # By default, this makefile creates CROMs with tiles for displaying a ngdevkit
 # logo during the attract mode.
 # Note: build rules (%.gif -> %.c<1,2>) are defined in Makefile.build
-# El orden define el número de tile y tiene que coincidir con tools/make_assets.py:
-# logo del BIOS (0-255) -> luchador -> efectos -> cielo -> ciudad -> piso (5 franjas) -> fuente
-CROM_PARTS=base-crom-logo fighter fx proj sky city floor0 floor1 floor2 floor3 floor4 font
+# El orden define el número de tile y tiene que coincidir con tools/make_assets.py
+# (TILE_* en src/gen/assets.h): logo del BIOS (0-255) -> efectos -> cielo ->
+# piso (5 franjas) -> fuente -> ciudad con público animado -> personajes P1 y P2.
+# Los personajes van al final: tools/neosprite.py los numera desde TILE_END.
+CROM_PARTS=base-crom-logo fx proj sky floor0 floor1 floor2 floor3 floor4 font city char_p1 char_p2
 $(CROM1): $(CROM_PARTS:%=$(BUILDDIR)/assets/%.c1)
 $(CROM2): $(CROM_PARTS:%=$(BUILDDIR)/assets/%.c2)
 
@@ -147,9 +149,22 @@ $(BUILDDIR)/assets/samples.inc: assets/samples-map.yaml $(wildcard assets/sfx/*.
 
 
 
-# Regenerar assets placeholder (gráficos, paletas, animaciones y sonidos)
+# Regenerar assets placeholder (gráficos, paletas, animaciones y sonidos).
+# Los luchadores procedurales pasan por el mismo conversor que el arte real.
+CHARS=ROBO NINJA
 assets:
 	python3 tools/make_assets.py
+	for n in $(CHARS); do python3 tools/neosprite.py char art/tmp-procedural/$$n --name $$n || exit 1; done
 	tools/make_sfx.sh
 
-.PHONY: assets
+# Arte real: art/src/characters/<NOMBRE>/ y
+# art/src/stage/. Lo que falte sale del procedural (art/tmp-procedural/).
+art:
+	python3 tools/make_assets.py
+	for n in $(CHARS); do \
+	  d=art/src/characters/$$n; [ -d $$d/idle ] || d=art/tmp-procedural/$$n; \
+	  python3 tools/neosprite.py char $$d --name $$n --preview || exit 1; \
+	done
+	python3 tools/neosprite.py stage art/src/stage
+
+.PHONY: assets art

@@ -6,9 +6,15 @@
 //
 // Cada capa usa 21 sprites de hardware. La columna k de la imagen vive en el
 // sprite k % 21 y solo se recarga cuando la cámara cruza un borde de 16 px.
+//
+// La ciudad lleva el público animado por hardware: sus tiles salen de
+// city_map, y los de la tribuna tienen el bit de auto-animación de 4 cuadros
+// (bit 2 del atributo SCB1). El LSPC cambia los 2 bits bajos del número de
+// tile cada CROWD_ANIM_SPEED+1 frames, sin CPU ni sprites extra.
 #include "stage.h"
 #include "hw.h"
 #include "gen/assets.h"
+#include "gen/stage_gen.h"
 
 #define HW_COLS 21
 
@@ -19,21 +25,33 @@ static const layer_def_t defs[] = { LAYER_TABLE };
 static s16 loaded[NLAYERS][HW_COLS];
 
 static u16 layer_spr(u8 i) { return SPR_STAGE + i * HW_COLS; }
-static u8 layer_pal(u8 i) { return i == 0 ? PAL_SKY : i == 1 ? PAL_CITY : PAL_STREET; }
+static u8 layer_pal(u8 i) { return i == 0 ? PAL_SKY : i == LAYER_CITY ? PAL_CITY : PAL_STREET; }
 
 static void load_column(u8 i, u16 hw, s16 k) {
     const layer_def_t *l = &defs[i];
     *REG_VRAMMOD = 1;
     *REG_VRAMADDR = ADDR_SCB1 + (layer_spr(i) + hw) * 64;
-    u16 tile = l->tile + k;
-    for (u8 r = 0; r < l->rows; r++, tile += l->cols) {
-        *REG_VRAMRW = tile;
-        *REG_VRAMRW = (u16)layer_pal(i) << 8;
+    if (i == LAYER_CITY) {
+        const u16 *m = &city_map[k];
+        for (u8 r = 0; r < l->rows; r++, m += l->cols) {
+            u16 e = *m;
+            *REG_VRAMRW = l->tile + (e & 0x3fff);
+            *REG_VRAMRW = ((u16)((e & 0x8000) ? PAL_CROWD : PAL_CITY) << 8) | ((e >> 12) & 4);
+        }
+    } else {
+        u16 tile = l->tile + k;
+        for (u8 r = 0; r < l->rows; r++, tile += l->cols) {
+            *REG_VRAMRW = tile;
+            *REG_VRAMRW = (u16)layer_pal(i) << 8;
+        }
     }
     loaded[i][hw] = k;
 }
 
 void stage_init(void) {
+    // velocidad de la auto-animación (bits 15-8); el resto en 0: animación
+    // activa y sin interrupción de timer
+    *REG_LSPCMODE = (u16)CROWD_ANIM_SPEED << 8;
     for (u8 i = 0; i < NLAYERS; i++)
         for (u16 h = 0; h < HW_COLS; h++) {
             loaded[i][h] = -1;

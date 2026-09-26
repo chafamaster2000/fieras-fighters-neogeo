@@ -10,6 +10,7 @@
 #include "fx.h"
 #include "hud.h"
 #include "ai.h"
+#include "gen/stage_gen.h"
 #include "sound.h"
 
 volatile game_t g;
@@ -233,11 +234,12 @@ static void setup_video(void) {
     hw_load_palette(PAL_SKY, pal_sky);
     hw_load_palette(PAL_CITY, pal_city);
     hw_load_palette(PAL_STREET, pal_street);
-    hw_load_palette(PAL_P1, pal_fighter_p1);
-    hw_load_palette(PAL_P2, pal_fighter_p2);
+    hw_load_palette(PAL_P1, char_p1.pal);
+    hw_load_palette(PAL_P2, char_p2.pal);
     hw_load_palette(PAL_FX, pal_fx);
     hw_load_palette(PAL_MSG, pal_msg);
     hw_load_palette(PAL_PROJ, pal_proj);
+    hw_load_palette(PAL_CROWD, pal_crowd);
     MMAP_PALBANK1[0] = 0x8000;
     MMAP_PALBANK1[1] = 0x7fff;
     MMAP_PALBANK1[2] = 0x0333;
@@ -245,8 +247,8 @@ static void setup_video(void) {
     stage_init();
     fx_init();
     // P2 usa sprites de índice menor: P1 se dibuja encima
-    fighter_init(&fs[1], 1, SPR_FIGHTER, PAL_P2);
-    fighter_init(&fs[0], 0, SPR_FIGHTER + FIGHTER_COLS, PAL_P1);
+    fighter_init(&fs[1], 1, SPR_FIGHTER, PAL_P2, &char_p2);
+    fighter_init(&fs[0], 0, SPR_FIGHTER + FIGHTER_HW_COLS, PAL_P1, &char_p1);
 }
 
 static void round_setup(void) {
@@ -257,7 +259,18 @@ static void round_setup(void) {
     hitstop = 0;
     g.timer = ROUND_TIME;
     g.winner = 0;
-    hud_init();
+    hud_init(fs[0].ch->name, fs[1].ch->name);
+}
+
+// "<NOMBRE> WINS" (+ "!" al final del match), para los mensajes grandes
+static const char *wins_msg(const fighter_t *f, u8 bang) {
+    static char buf[16];
+    u8 n = 0;
+    for (const char *c = f->ch->name; *c && n < 9; c++) buf[n++] = *c;
+    for (const char *c = " WINS"; *c; c++) buf[n++] = *c;
+    if (bang) buf[n++] = '!';
+    buf[n] = 0;
+    return buf;
 }
 
 // Espera `frames` renderizando; en la demo corta si se apretó START.
@@ -327,13 +340,13 @@ u8 game_match(u8 demo, u8 p1_human, u8 p2_human) {
             fighter_set_anim(win, ANIM_WIN);
             g.winner = win->id + 1;
         }
-        hud_message(win ? (win->id == 0 ? "BLAZE WINS" : "FROST WINS") : "DRAW");
+        hud_message(win ? wins_msg(win, 0) : "DRAW");
         g.rstate = RS_END;
         if (hold_frames(90, 0, demo)) return 1;
         g.round++;
     }
     g.mode = MODE_MATCH_END;
-    hud_message(fs[0].wins > fs[1].wins ? "BLAZE WINS!" : "FROST WINS!");
+    hud_message(wins_msg(fs[0].wins > fs[1].wins ? &fs[0] : &fs[1], 1));
     hold_frames(150, 0, 0);
     return 0;
 }

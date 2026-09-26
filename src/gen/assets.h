@@ -3,17 +3,21 @@
 #define GEN_ASSETS_H
 #include <ngdevkit/types.h>
 
-#define TILE_FIGHTER 256
-#define TILE_FX 1104
-#define TILE_PROJ 1136
-#define TILE_SKY 1163
-#define TILE_CITY 1370
-#define TILE_STREET 1630
-#define TILE_FONT 1784
-#define TILE_END 1928
+#include "gen/stage_gen.h"
+
+/* orden de la C-ROM (Makefile CROM_PARTS): fx proj sky floor0..4 font city char_p1 char_p2.
+   city.gif empieza con relleno para que sus grupos animados queden alineados a 4.
+   TILE_END: primer tile libre; ahí empiezan los personajes (src/gen/char_p1.c) */
+#define TILE_FX 256
+#define TILE_PROJ 288
+#define TILE_SKY 315
+#define TILE_STREET 522
+#define TILE_FONT 676
+#define TILE_CITY 824
+#define TILE_END (TILE_CITY + CITY_TILES)
 
 /* fuente de mensajes: glifo i ocupa 2x2 tiles; fila de abajo a FONT_GLYPHS*2 */
-#define FONT_GLYPHS 36
+#define FONT_GLYPHS 37
 extern const u8 font_map[96];
 
 /* efectos: tiles de 16x16 en fx.gif (2 filas de 16) */
@@ -23,24 +27,19 @@ extern const u8 font_map[96];
 #define FX_SHADOW 12
 #define FX_BLOCK 14
 
-#define FIGHTER_PX_W 112
-#define FIGHTER_PX_H 128
-#define FIGHTER_COLS 7
-#define FIGHTER_ROWS 8
-#define FIGHTER_AX 56
-#define FIGHTER_AY 124
-
 #define CAM_RANGE 192
 #define NUM_LAYERS 7
-/* capas: tile base, columnas, filas, ratio (dieciseisavos de la cámara), y */
+/* capas: tile base, columnas, filas, ratio (dieciseisavos de la cámara), y.
+   La ciudad (capa 1) usa city_map en vez de tiles consecutivos. */
+#define LAYER_CITY 1
 #define LAYER_TABLE \
-    {1163, 23, 9, 4, 0}, \
-    {1370, 26, 10, 8, 16}, \
-    {1630, 28, 1, 10, 144}, \
-    {1658, 29, 1, 12, 160}, \
-    {1687, 31, 1, 14, 176}, \
-    {1718, 32, 1, 16, 192}, \
-    {1750, 34, 1, 18, 208}, \
+    {315, 23, 9, 4, 0}, \
+    {TILE_CITY, 26, 10, 8, 16}, \
+    {522, 28, 1, 10, 144}, \
+    {550, 29, 1, 12, 160}, \
+    {579, 31, 1, 14, 176}, \
+    {610, 32, 1, 16, 192}, \
+    {642, 34, 1, 18, 208}, \
 
 #define STAGE_W 512
 
@@ -55,50 +54,6 @@ extern const u8 font_map[96];
 #define HUD_DIGITS 95
 #define HUD_MEDAL 215
 
-#define FF_ACTIVE 1
-#define FF_LOW 2
-#define FF_OVERHEAD 4
-#define FF_SPAWN 8
-
-enum {
-    ANIM_IDLE,
-    ANIM_WALK_F,
-    ANIM_WALK_B,
-    ANIM_CROUCH_T,
-    ANIM_CROUCH,
-    ANIM_PREJUMP,
-    ANIM_AIR_UP,
-    ANIM_AIR_DOWN,
-    ANIM_LAND,
-    ANIM_PUNCH,
-    ANIM_KICK,
-    ANIM_CPUNCH,
-    ANIM_JKICK,
-    ANIM_FIREBALL,
-    ANIM_BLOCK,
-    ANIM_CBLOCK,
-    ANIM_HIT,
-    ANIM_CHIT,
-    ANIM_KNOCKDOWN,
-    ANIM_KO,
-    ANIM_WIN,
-    ANIM_COUNT
-};
-
-typedef struct { s8 x, y, w, h; } box_t;
-typedef struct {
-    u16 tmap;       /* índice en fighter_tmaps */
-    u8 dur;
-    u8 flags;
-    box_t hit;      /* w == 0: sin hitbox */
-    box_t hurt_hi;
-    box_t hurt_lo;
-} frame_t;
-typedef struct { u16 first; u8 count; u8 loop; } anim_t;
-
-extern const u16 fighter_tmaps[][56];
-extern const frame_t fighter_frames[];
-extern const anim_t fighter_anims[];
-extern const u16 pal_fighter_p1[16], pal_fighter_p2[16], pal_fx[16], pal_proj[16], pal_sky[16], pal_city[16], pal_street[16], pal_hud[16], pal_msg[16];
+extern const u16 pal_fx[16], pal_proj[16], pal_hud[16], pal_msg[16];
 
 #endif

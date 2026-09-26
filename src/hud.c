@@ -71,7 +71,7 @@ static void draw_digit(u8 col, u8 d) {
             fix_put(col + c, 2 + r, PAL_HUD, T(HUD_DIGITS + d * 12 + r * 3 + c));
 }
 
-void hud_init(void) {
+void hud_init(const char *name1, const char *name2) {
     ng_cls();
     for (u8 row = 0; row < 2; row++) {
         fix_put(P1_BAR_COL - 1, BAR_ROW + row, PAL_HUD, T(HUD_CAP_L));
@@ -79,8 +79,10 @@ void hud_init(void) {
         fix_put(P2_BAR_COL - 1, BAR_ROW + row, PAL_HUD, T(HUD_CAP_L));
         fix_put(P2_BAR_COL + BAR_TILES, BAR_ROW + row, PAL_HUD, T(HUD_CAP_R));
     }
-    ng_text(P1_BAR_COL, 5, PAL_TEXT, "BLAZE");
-    ng_text(P2_BAR_COL + BAR_TILES - 5, 5, PAL_TEXT, "FROST");
+    u8 len2 = 0;
+    while (name2[len2]) len2++;
+    ng_text(P1_BAR_COL, 5, PAL_TEXT, name1);
+    ng_text(P2_BAR_COL + BAR_TILES - len2, 5, PAL_TEXT, name2);
     last_hp[0] = last_hp[1] = 0xffff;
     drain[0] = drain[1] = 100;
     last_drain[0] = last_drain[1] = 0xffff;
