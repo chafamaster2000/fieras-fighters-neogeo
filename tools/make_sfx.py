@@ -279,6 +279,30 @@ def sfx_fire():
     return finish(mix(x * e, rumble * e, 0.5 * crackle * e), drive=1.6, peak=0.85)
 
 
+def sfx_char_ok():
+    """Personaje elegido: golpe de platillo invertido + acorde brillante de
+    metales FM (E mayor) + bombo cinematográfico y ecos de estadio. Es más
+    ancho y grave que SND_MENU_OK (que es un arpegio chiquito): suena a
+    "¡este!" como el golpe del selector de KOF. Usa su propio generador de
+    ruido para no correr la semilla de los demás efectos."""
+    r = np.random.default_rng(1997)
+    d = 0.62
+    t = t_axis(d)
+    n = r.uniform(-1, 1, len(t))
+    # "shing": ruido agudo que se abre de golpe y se apaga en ~120 ms
+    shing = hp(n, 4200) * env_exp(d, 0.11, attack=0.004)
+    crack = bp(n, 1200, 5200) * env_exp(d, 0.014)
+    # acorde de metales: diente de sierra + cuadrada, un toque de desafinación
+    chord = np.zeros(len(t))
+    for f, a in [(659.3, 1.0), (830.6, 0.8), (987.8, 0.8), (1318.5, 0.6), (329.6, 0.7)]:
+        ph = 2 * np.pi * f * t
+        chord += a * (0.6 * saw(ph) + 0.4 * saw(ph * 1.006) + 0.3 * square(ph))
+    chord = lp(chord, 5200) * env_exp(d, 0.16, attack=0.003)
+    boom = sweep_sine(d, 190, 42, 0.04) * env_exp(d, 0.14)
+    x = mix(0.55 * shing, 0.5 * crack, 0.32 * chord, 1.1 * boom)
+    return finish(delay_mix(x, [(0.085, 0.3), (0.17, 0.14)])[:int(0.72 * SR)], drive=2.3, peak=0.9)
+
+
 # ----------------------------------------------------------- voces (locutor)
 # Locutor robótico (le queda bien a un torneo con un perro cyborg): síntesis
 # por formantes en cascada tipo Klatt. Fuente glotal en diente de sierra,
@@ -454,6 +478,7 @@ SFX = {
     "whoosh": sfx_whoosh, "hit": sfx_hit, "heavy": sfx_heavy, "block": sfx_block,
     "fireball": sfx_fireball, "ko": sfx_ko, "fbhit": sfx_fbhit, "land": sfx_land,
     "menu_move": sfx_menu_move, "menu_ok": sfx_menu_ok, "logo": sfx_logo, "fire": sfx_fire,
+    "char_ok": sfx_char_ok,
 }
 DRUMS = {
     "kick": drum_kick, "snare": drum_snare, "hat": drum_hat, "openhat": drum_openhat,

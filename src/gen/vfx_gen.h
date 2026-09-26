@@ -6,7 +6,7 @@
 
 /* los tiles de los efectos van después de la UI (última parte de la C-ROM) */
 #define TILE_VFX (TILE_UI + UI_TILES)
-#define VFX_TILES 688
+#define VFX_TILES 672
 #define VFX_PALS 7
 
 enum {
@@ -22,7 +22,7 @@ enum {
 };
 
 #define VFX_HIT_L_W 4   /* columnas máximas */
-#define VFX_HIT_H_W 5   /* columnas máximas */
+#define VFX_HIT_H_W 6   /* columnas máximas */
 #define VFX_BLOCK_W 4   /* columnas máximas */
 #define VFX_BALL_W 5   /* columnas máximas */
 #define VFX_LAUNCH_W 3   /* columnas máximas */

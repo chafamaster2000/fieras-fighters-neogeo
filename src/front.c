@@ -13,6 +13,8 @@
 #include "stage.h"
 #include "fighter.h"
 #include "sound.h"
+#include "msg.h"
+#include "gen/assets.h"
 #include "gen/stage_gen.h"
 
 #define USER_MODE_GAME 2
@@ -24,7 +26,7 @@
 #define DOG_Y          94            // centro del perro (caja y 54-134, contenido 61-127)
 #define TAG_ROW        20            // lema en y 144
 #define COPY_ROW       22            // (C) 2026 ODACLICK en y 160
-#define TITLE_Y        136           // logo abajo (y 64-208): arriba van las caras de los bustos
+#define TITLE_Y        142           // logo abajo (y 70-214, contenido hasta y 207): el título es un VS de los bustos
 #define PORTRAIT_CY    88            // centro vertical de la grilla del selector
 
 static u8 quick;                     // START con D: directo al match
@@ -91,8 +93,9 @@ static void clear_screen(void) {
     fade_add(PAL_TEXT, txt_white, 16);
 }
 
-// Escenario de fondo, apagado a cap/16
-static void stage_bg(u8 cap) {
+// Escenario de fondo, apagado a cap/16 (hoy solo lo usa el título sin fondo
+// propio; el selector carga el escenario ya en negro)
+__attribute__((unused)) static void stage_bg(u8 cap) {
     static const struct { u8 pal; const u16 *src; } p[] = {
         {PAL_SKY, pal_sky}, {PAL_CITY, pal_city}, {PAL_STREET, pal_street}, {PAL_CROWD, pal_crowd}};
     for (u8 i = 0; i < 4; i++) {
@@ -407,16 +410,99 @@ static u8 front_title(u8 attract) {
 }
 
 // ------------------------------------------------------------ selector
+//
+// Coreografía (frames a 60 Hz), todo con recursos de la época:
+//   entrada (SEL_INTRO = 40, A o START salta al final):
+//     0-12  el escenario de fondo sube desde negro (fundido de paleta)
+//     4-14  SELECT YOUR FIGHTER se destapa desde el centro en blanco; en 16 se asienta en dorado
+//    10-31  los retratos saltan con el zoom de hardware (SCB2), escalonados de a 4
+//           frames, con rebote y un destello blanco que se apaga
+//    14-30  los luchadores entran deslizándose desde los bordes, frenando
+//    32     nombres, 1P/2P, cursores, reloj y ayuda: recién ahí se juega
+//   confirmación: el luchador pasa a blanco pleno y vuelve a su paleta en 16
+//     frames (col_mix hacia blanco), sincronizado con el destello del retrato,
+//     con SND_CHAR_OK
+//   salida tipo VS (SEL_OUTRO = 60 frames desde la segunda confirmación):
+//     0-17  los dos en pose de victoria mientras termina el destello
+//    18-27  destello blanco de toda la pantalla, se borra la interfaz y los
+//           retratos se achican hasta desaparecer
+//    20-34  "VS" gigante entra con zoom y parpadeo (msg_show) y un impacto
+//    34-51  los luchadores salen disparados hacia los bordes
+//    42-58  fundido a negro (el VS se funde con todo) y arranca el match
+
+#define SEL_INTRO   40
+#define SEL_UI_T    32                // en la entrada: aparecen reloj, nombres y cursores
+#define SEL_BLINK   16                // niveles del destello de confirmación (16 = blanco)
+#define SEL_OUTRO   60
+#define SLIDE_OFF   136               // px fuera de pantalla al empezar a entrar
+#define HEAD_COL    10                // SELECT YOUR FIGHTER: 19 letras centradas
+#define HEAD_ROW    3
 
 typedef struct {
     u8 cur, color, done, human, flash;
+    const u16 *pal;                   // paleta del luchador, para el destello
     fighter_t f;
 } seat_t;
 
 static seat_t seat[2];
+static u8 sel_quiet;                  // en la entrada todavía no se escriben los nombres
+static const char head_txt[] = "SELECT YOUR FIGHTER";
 
 static s16 portrait_x(u8 i) {         // borde izquierdo del retrato i
     return SCREEN_W / 2 - (ROSTER_N * 64 + (ROSTER_N - 1) * 16) / 2 + i * 80;
+}
+
+// Paletas del selector con buffer: el 68000 tarda casi un frame en mezclar
+// 15 paletas, así que la mezcla se calcula durante el frame (sp_mix) y se
+// copia al principio del siguiente, en el vblank (sp_commit). Sin esto el
+// destello blanco y los fundidos se cortaban a mitad de pantalla.
+#define SP_MAX 20
+static struct { u8 hw, cap; const u16 *src; } sp[SP_MAX];
+static u16 sp_buf[SP_MAX][16];
+static u8 sp_n, sp_dirty;
+
+static void sp_add(u8 hw, const u16 *src, u8 cap) {
+    if (sp_n == SP_MAX) return;
+    sp[sp_n].hw = hw; sp[sp_n].src = src; sp[sp_n].cap = cap;
+    sp_n++;
+}
+
+// white=0: fundido a negro (level 16 = color pleno, respetando el tope);
+// white=1: hacia blanco desde el color pleno (level 16 = blanco)
+static void sp_mix(u8 level, u8 white) {
+    for (u8 i = 0; i < sp_n; i++) {
+        const u16 *src = sp[i].src;
+        u8 cap = sp[i].cap;
+        u8 l = (u8)(((u16)level * cap) >> 4);
+        for (u8 k = 1; k < 16; k++) {
+            u16 c = src[k];
+            if (white) sp_buf[i][k] = col_mix(cap < 16 ? col_mix(c, cap, 0) : c, level, 1);
+            else sp_buf[i][k] = l >= 16 ? c : col_mix(c, l, 0);
+        }
+    }
+    sp_dirty = 1;
+}
+
+static void sp_commit(void) {
+    if (!sp_dirty) return;
+    sp_dirty = 0;
+    for (u8 i = 0; i < sp_n; i++) {
+        volatile u16 *dst = MMAP_PALBANK1 + sp[i].hw * 16;
+        const u16 *b = sp_buf[i];
+        for (u8 k = 1; k < 16; k++) dst[k] = b[k];
+    }
+}
+
+static const struct { u8 pal; const u16 *src; } sel_stage_pals[4] = {
+    {PAL_SKY, pal_sky}, {PAL_CITY, pal_city}, {PAL_STREET, pal_street}, {PAL_CROWD, pal_crowd}};
+#define SEL_BG_CAP 6                  // el escenario detrás del selector, apagado a 6/16
+
+static void seat_name(u8 s) {
+    const character_t *ch = roster[seat[s].cur];
+    ng_text(s ? 28 : 2, 27, PAL_TEXT, "          ");
+    u8 n = 0;
+    while (ch->name[n]) n++;
+    ng_text(s ? 38 - n : 2, 27, s ? PAL_TXT_MAG : PAL_TXT_CYAN, ch->name);
 }
 
 static void seat_preview(u8 s) {
@@ -427,13 +513,10 @@ static void seat_preview(u8 s) {
     fighter_reset_round(&p->f, s ? 262 : 58, s ? -1 : 1);
     fighter_set_anim(&p->f, p->done ? ANIM_WIN : ANIM_IDLE);
     p->f.drawn_img = -1;
-    const u16 *src = char_palette(s, ch, p->color);
-    hw_load_palette(pal, src);
-    fade_add(pal, src, 16);
-    ng_text(s ? 28 : 2, 27, PAL_TEXT, "          ");
-    u8 n = 0;
-    while (ch->name[n]) n++;
-    ng_text(s ? 38 - n : 2, 27, s ? PAL_TXT_MAG : PAL_TXT_CYAN, ch->name);
+    p->pal = char_palette(s, ch, p->color);
+    hw_load_palette(pal, p->pal);
+    fade_add(pal, p->pal, 16);
+    if (!sel_quiet) seat_name(s);
 }
 
 static void draw_labels(void) {
@@ -459,9 +542,11 @@ static void confirm(u8 s, u8 color) {
     // espejo: el segundo en elegir toma el otro color (regla de KOF)
     if (o->done && o->cur == p->cur && o->color == color) p->color ^= 1;
     p->done = 1;
-    p->flash = 16;
+    p->flash = SEL_BLINK + 1;         // sel_draw lo baja: niveles 16..0
     seat_preview(s);
-    sound_cmd(SND_MENU_OK);
+    g.sel_ch[s] = p->cur;
+    g.sel_color[s] = p->color;
+    sound_cmd(SND_CHAR_OK);
 }
 
 static void portrait_flash(u8 i, u8 level) {
@@ -470,6 +555,13 @@ static void portrait_flash(u8 i, u8 level) {
         volatile u16 *dst = MMAP_PALBANK1 + (PAL_UI + im->pal0 + k) * 16;
         for (u8 c = 1; c < 16; c++) dst[c] = col_mix(ui_pals[im->pal0 + k][c], level, 1);
     }
+}
+
+// Luchador del selector mezclado hacia blanco: 16 blanco pleno, 0 su paleta
+static void fighter_blink(u8 s, u8 level) {
+    volatile u16 *dst = MMAP_PALBANK1 + (s ? PAL_P2 : PAL_P1) * 16;
+    const u16 *src = seat[s].pal;
+    for (u8 c = 1; c < 16; c++) dst[c] = col_mix(src[c], level, 1);
 }
 
 static void seat_input(u8 s, u8 j) {
@@ -485,17 +577,177 @@ static void seat_input(u8 s, u8 j) {
     else if (j & (J_B | J_D)) confirm(s, 1);
 }
 
+static void portrait_pos(u8 i, u8 hz, u8 vz) {
+    ui_place(UI_PORTRAIT_ROBOCLICK + i, SPR_PORTRAIT + i * 5, portrait_x(i) + 32, PORTRAIT_CY, hz, vz);
+}
+
+// Un frame de lo que se mueve siempre: cursores, destellos y luchadores.
+// off: cuánto les falta a los luchadores para llegar (P1 desde la izquierda,
+// P2 desde la derecha); off < 0 los deja ocultos.
+static void sel_draw(u16 t, u8 cursors, s16 off) {
+    // cursores: si están en el mismo retrato se alternan
+    u8 same = seat[0].cur == seat[1].cur;
+    for (u8 s = 0; s < 2; s++) {
+        seat_t *p = &seat[s];
+        u16 spr = SPR_CURSOR + s * 5;
+        u8 show = cursors && (s == 0 || seat[1].human || seat[0].done) && (!same || ((t >> 2) & 1) == s);
+        if (p->done) show = show && (p->flash || !same || ((t >> 2) & 1) == s);
+        if (show) ui_place(UI_CURSOR, spr, portrait_x(p->cur) + 32, PORTRAIT_CY, 15, 255);
+        else ui_hide(spr);
+        // el cursor late mientras se elige
+        if (!p->done) {
+            u16 v = cur_pals[s][2];
+            MMAP_PALBANK1[(PAL_CUR1 + s) * 16 + 2] = (t & 8) ? col_mix(v, 6, 1) : v;
+        }
+        // confirmación: luchador y retrato de blanco a su color, juntos
+        if (p->flash) {
+            p->flash--;
+            portrait_flash(p->cur, p->flash);
+            fighter_blink(s, p->flash);
+        }
+        fighter_tick_anim(&p->f);
+        if (off < 0) spr_hide(p->f.spr);
+        else fighter_draw(&p->f, s ? -off : off, 0);
+    }
+}
+
+// SELECT YOUR FIGHTER destapado desde el centro: k letras a cada lado
+static void head_reveal(u8 k, u8 pal) {
+    char b[sizeof(head_txt)];
+    for (u8 i = 0; i < sizeof(head_txt) - 1; i++) {
+        s8 d = (s8)i - (s8)(sizeof(head_txt) - 1) / 2;
+        if (d < 0) d = -d;
+        b[i] = (u8)d <= k ? head_txt[i] : ' ';
+    }
+    b[sizeof(head_txt) - 1] = 0;
+    ng_text_tall(HEAD_COL, HEAD_ROW, pal, b);
+}
+
+static void select_ui(u8 sec) {       // lo último de la entrada
+    sel_quiet = 0;
+    seat_name(0);
+    seat_name(1);
+    draw_labels();
+    draw_timer(sec);
+    ng_center_text(28, PAL_TXT_GRAY, "A:COLOR 1   B:COLOR 2");
+}
+
+// Frame t de la entrada; devuelve cuánto les falta a los luchadores
+static s16 intro_frame(u8 t, u8 sec) {
+    static const u8 pop_hz[9] = {1, 4, 8, 12, 15, 15, 13, 14, 15};
+    static const u8 pop_vz[9] = {24, 84, 150, 220, 255, 255, 214, 238, 255};
+    if (t < 12) sp_mix((u8)((t + 1) * 4 / 3), 0);   // lo copia sp_commit en el frame t+1
+    if (t >= 4 && t <= 14) head_reveal(t - 4, PAL_TEXT);
+    if (t == 16) head_reveal(10, PAL_TXT_GOLD);
+    for (u8 i = 0; i < ROSTER_N; i++) {
+        s8 k = (s8)t - (s8)(10 + i * 4);
+        if (k < 0 || k >= 9) continue;
+        portrait_pos(i, pop_hz[k], pop_vz[k]);
+        portrait_flash(i, (u8)(16 - k * 2));
+        if (k == 0) sound_cmd(SND_MENU_MOVE);
+    }
+    if (t == SEL_UI_T) select_ui(sec);
+    if (t < 14) return -1;
+    if (t >= 30) return 0;
+    s16 r = 30 - (s16)t;              // frena al llegar (ease-out cuadrático)
+    return (s16)(SLIDE_OFF * r * r / 256);
+}
+
+static void intro_skip(u8 sec) {
+    sp_mix(16, 0);
+    sp_commit();
+    head_reveal(10, PAL_TXT_GOLD);
+    for (u8 i = 0; i < ROSTER_N; i++) {
+        portrait_pos(i, 15, 255);
+        portrait_flash(i, 0);
+    }
+    select_ui(sec);
+}
+
+static void clear_rows(u8 r0, u8 r1) {
+    for (u8 r = r0; r <= r1; r++) clear_row(r);
+}
+
+// Salida tipo VS después de la segunda confirmación
+static void outro_pals(u8 e) {        // paletas que tiene que mostrar el frame e
+    if (e >= 18 && e <= 27) sp_mix((u8)(16 - (e - 18) * 16 / 10), 1);
+    else if (e == 28) sp_mix(16, 0);
+    else if (e >= 42) sp_mix(e < 58 ? (u8)(58 - e) : 0, 0);
+}
+
+static void select_outro(u16 t) {
+    // todo lo que queda en pantalla entra al destello y al fundido
+    sp_n = 0;
+    for (u8 i = 0; i < 4; i++) sp_add(sel_stage_pals[i].pal, sel_stage_pals[i].src, SEL_BG_CAP);
+    for (u8 i = 0; i < ROSTER_N; i++) {
+        const uiimg_t *im = &ui_imgs[UI_PORTRAIT_ROBOCLICK + i];
+        for (u8 k = 0; k < im->npal; k++) sp_add(PAL_UI + im->pal0 + k, ui_pals[im->pal0 + k], 16);
+    }
+    sp_add(PAL_P1, seat[0].pal, 16);
+    sp_add(PAL_P2, seat[1].pal, 16);
+    s16 off = 0;
+    for (u8 e = 0; e < SEL_OUTRO; e++, t++) {
+        wait_frame();
+        sp_commit();
+        if (e < 18) {                 // pose de victoria mientras termina el destello
+            sel_draw(t, 1, 0);
+            outro_pals(e + 1);
+            continue;
+        }
+        if (e == 18) {
+            clear_rows(3, 6);
+            clear_rows(27, 28);
+            ui_hide(SPR_CURSOR);
+            ui_hide(SPR_CURSOR + 5);
+        }
+        if (e < 26) {                 // los retratos se achican hasta desaparecer
+            u8 k = e - 18;
+            for (u8 i = 0; i < ROSTER_N; i++) portrait_pos(i, (u8)(15 - 2 * k), (u8)(255 - 34 * k));
+        } else if (e == 26) {
+            for (u8 i = 0; i < ROSTER_N; i++) ui_hide(SPR_PORTRAIT + i * 5);
+        }
+        if (e == 20) { msg_show("VS"); sound_cmd(SND_FBHIT); }
+        if (e >= 20) msg_update();
+        if (e == 36) sp_add(PAL_MSG, pal_msg, 16);    // desde acá el VS también se funde
+        if (e >= 34) {                // salen disparados (ease-in)
+            s16 k = (s16)(e - 34);
+            off = k * k * 5 / 8;
+            if (off > 170) off = 170;
+        }
+        for (u8 s = 0; s < 2; s++) {
+            fighter_tick_anim(&seat[s].f);
+            fighter_draw(&seat[s].f, s ? -off : off, 0);
+        }
+        outro_pals(e + 1);
+    }
+    wait_frame();
+    sp_commit();
+    msg_hide();
+    fade_apply(0);                    // el resto de las paletas registradas, también a negro
+}
+
 static void front_select(u8 vs_human) {
     g.mode = MODE_SELECT;
     sound_cmd(SND_MUS_SELECT);
     clear_screen();
-    stage_bg(6);
+    // el escenario se carga ya en negro (stage_bg lo cargaría a pleno por
+    // unos frames mientras sube los tiles) y lo levanta la entrada
+    sp_n = 0;
+    for (u8 i = 0; i < 4; i++) {
+        sp_add(sel_stage_pals[i].pal, sel_stage_pals[i].src, SEL_BG_CAP);
+        fade_add(sel_stage_pals[i].pal, sel_stage_pals[i].src, SEL_BG_CAP);
+    }
+    sp_add(PAL_TEXT, txt_white, 16);
+    for (u8 i = 0; i < 4; i++) sp_add(PAL_TXT_CYAN + i, txt_pals[i], 16);
+    sp_mix(0, 0);
+    sp_commit();
+    stage_init();
     stage_update(CAM_RANGE / 2, scroll);
     for (u8 i = 0; i < ROSTER_N; i++) {
         u8 img = UI_PORTRAIT_ROBOCLICK + i;
         ui_palettes(img, 16);
         ui_load(img, SPR_PORTRAIT + i * 5, 0);
-        ui_place(img, SPR_PORTRAIT + i * 5, portrait_x(i) + 32, PORTRAIT_CY, 15, 255);
+        ui_hide(SPR_PORTRAIT + i * 5);
     }
     hw_load_palette(PAL_CUR1, cur_pals[0]);
     hw_load_palette(PAL_CUR2, cur_pals[1]);
@@ -503,37 +755,50 @@ static void front_select(u8 vs_human) {
     fade_add(PAL_CUR2, cur_pals[1], 16);
     ui_load_as(UI_CURSOR, SPR_CURSOR, PAL_CUR1);
     ui_load_as(UI_CURSOR, SPR_CURSOR + 5, PAL_CUR2);
+    ui_hide(SPR_CURSOR);
+    ui_hide(SPR_CURSOR + 5);
 
     seat[0] = (seat_t){0};
     seat[1] = (seat_t){0};
     seat[1].cur = ROSTER_N > 1 ? 1 : 0;
     seat[0].human = 1;
     seat[1].human = vs_human;
+    sel_quiet = 1;
     seat_preview(0);
     seat_preview(1);
-    fade_apply(0);
-    ng_center_text_tall(3, PAL_TXT_GOLD, "SELECT YOUR FIGHTER");
-    ng_center_text(28, PAL_TXT_GRAY, "A:COLOR 1   B:COLOR 2");
-    draw_labels();
+    for (u8 s = 0; s < 2; s++) {
+        g.sel_ch[s] = seat[s].cur;
+        g.sel_color[s] = seat[s].color;
+    }
 
-    u8 sec = SELECT_TIME, roulette = 0;
-    u16 frames = 0, end_t = 0;
-    draw_timer(sec);
+    u8 sec = SELECT_TIME, roulette = 0, intro = 0;
+    u16 frames = 0, t;
     pads_sync();
-    for (u16 t = 0;; t++) {
+    for (t = 0;; t++) {
         wait_frame();
-        if (t <= 16) fade_apply((u8)t);
+        sp_commit();
         u8 j1 = pad_edge(0), j2 = pad_edge(1), st = stat_edge();
+        if (intro < SEL_INTRO) {
+            // A (de cualquiera) o START de P1 saltan la entrada
+            if (((j1 | j2) & J_A) || (st & CNT_START1)) {
+                intro_skip(sec);
+                intro = SEL_INTRO;
+                sel_draw(t, 1, 0);
+            } else {
+                s16 off = intro_frame(intro, sec);
+                sel_draw(t, intro >= SEL_UI_T, off);
+                intro++;
+            }
+            continue;
+        }
         // un retador puede entrar con START de P2 mientras elige la CPU
         if (!seat[1].human && !seat[1].done && (st & CNT_START2)) {
             seat[1].human = 1;
             roulette = 0;
             draw_labels();
         }
-        if (t > 16) {
-            seat_input(0, j1);
-            if (seat[1].human) seat_input(1, j2);
-        }
+        seat_input(0, j1);
+        if (seat[1].human) seat_input(1, j2);
         // la CPU elige con una ruleta cuando P1 ya confirmó
         if (!seat[1].human && seat[0].done && !seat[1].done) {
             if (++roulette % 5 == 0) {
@@ -544,43 +809,19 @@ static void front_select(u8 vs_human) {
             }
             if (roulette >= 40 + (g.frame & 7) * 5) confirm(1, 0);
         }
-        if (!seat[0].done || !seat[1].done) {
-            if (++frames == 60 && sec) {
-                frames = 0;
-                draw_timer(--sec);
-                if (!sec) {
-                    if (!seat[0].done) confirm(0, 0);
-                    if (!seat[1].done && seat[1].human) confirm(1, 0);
-                    roulette = 60;
-                }
+        if (++frames == 60 && sec) {
+            frames = 0;
+            draw_timer(--sec);
+            if (!sec) {
+                if (!seat[0].done) confirm(0, 0);
+                if (!seat[1].done && seat[1].human) confirm(1, 0);
+                roulette = 60;
             }
-        } else if (++end_t > 70) {
-            break;
         }
-        // cursores: si están en el mismo retrato se alternan
-        u8 same = seat[0].cur == seat[1].cur;
-        for (u8 s = 0; s < 2; s++) {
-            u16 spr = SPR_CURSOR + s * 5;
-            u8 show = (s == 0 || seat[1].human || seat[0].done) && (!same || ((t >> 2) & 1) == s);
-            if (seat[s].done) show = show && (seat[s].flash || !same || ((t >> 2) & 1) == s);
-            if (show) ui_place(UI_CURSOR, spr, portrait_x(seat[s].cur) + 32, PORTRAIT_CY, 15, 255);
-            else ui_hide(spr);
-            // el cursor late mientras se elige
-            if (!seat[s].done) {
-                u16 v = cur_pals[s][2];
-                MMAP_PALBANK1[(PAL_CUR1 + s) * 16 + 2] = (t & 8) ? col_mix(v, 6, 1) : v;
-            }
-            if (seat[s].flash) {
-                portrait_flash(seat[s].cur, --seat[s].flash);
-            }
-            fighter_tick_anim(&seat[s].f);
-            fighter_draw(&seat[s].f, 0, 0);
-        }
+        sel_draw(t, 1, 0);
+        if (seat[0].done && seat[1].done) break;
     }
-    for (u8 l = 16; l-- > 0;) {
-        wait_frame();
-        fade_apply(l);
-    }
+    select_outro(t + 1);
     for (u8 s = 0; s < 2; s++) {
         g.sel_ch[s] = seat[s].cur;
         g.sel_color[s] = seat[s].color;

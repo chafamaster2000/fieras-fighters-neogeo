@@ -208,6 +208,28 @@ def placeholder_fieras(size=(288, 144)):
     return out, fire_frames(inner), inner
 
 
+def vs_gradient(w=320, h=224):
+    """Fondo del VS: negro violáceo arriba, índigo abajo y un resplandor
+    suave entre las dos caras, con tramado Bayer 4x4 (pocos colores por tile)."""
+    bayer = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
+    top, bot, glow = (5, 3, 14), (24, 10, 46), (70, 22, 100)
+    levels = 7
+    im = Image.new("RGBA", (w, h))
+    px = im.load()
+    for y in range(h):
+        for x in range(w):
+            t = y / (h - 1)
+            d = (((x - 160) / 150.0) ** 2 + ((y - 70) / 95.0) ** 2) ** 0.5
+            g = max(0.0, 1.0 - d) ** 1.6
+            v = min(1.0, 0.55 * t + 0.75 * g)
+            q = v * levels + (bayer[y & 3][x & 3] / 16.0 - 0.5)
+            q = min(levels, max(0, int(round(q)))) / levels
+            base = tuple(top[k] + (bot[k] - top[k]) * q for k in range(3))
+            c = tuple(int(min(255, base[k] + glow[k] * q * g * 1.2)) for k in range(3))
+            px[x, y] = c + (255,)
+    return im
+
+
 def char_idle(name):
     for base in (os.path.join(ROOT, "art", "src", "characters", name),
                  os.path.join(ROOT, "art", "tmp-procedural", name)):
@@ -431,8 +453,13 @@ def gather():
         items.append(("UI_TITLE_FIRE", fire, "anim8"))
     # fondo del título: cielo fijo y los dos bustos (se recortan a su caja)
     bg = os.path.join(SRC, "title_bg")
-    if all(os.path.exists(os.path.join(bg, f)) for f in ("sky.png", "left.png", "right.png")):
-        items.append(("UI_TITLE_SKY", os.path.join(bg, "sky.png"), "bg"))
+    if all(os.path.exists(os.path.join(bg, f)) for f in ("left.png", "right.png")):
+        # sin sky.png: fondo liso de VS (degradé con tramado), el foco en los bustos
+        sky = os.path.join(bg, "sky.png")
+        if not os.path.exists(sky):
+            sky = os.path.join(PROC, "title_vs_gradient.png")
+            vs_gradient().save(sky)
+        items.append(("UI_TITLE_SKY", sky, "bg"))
         items.append(("UI_TITLE_LEFT", os.path.join(bg, "left.png"), "layer"))
         items.append(("UI_TITLE_RIGHT", os.path.join(bg, "right.png"), "layer"))
     for name in ROSTER:

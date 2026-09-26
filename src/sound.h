@@ -26,6 +26,7 @@
 #define SND_VO_FIGHT    19   // A4 locutor
 #define SND_VO_KO       20   // A4 locutor
 #define SND_VO_YOUWIN   21   // A4 locutor
+#define SND_CHAR_OK     22   // A3 fuego/UI: personaje elegido en el selector
 
 // Música (FM + batería en ADPCM-A 5-6). Loopea sola salvo MUS_WIN.
 #define SND_MUS_TITLE   24

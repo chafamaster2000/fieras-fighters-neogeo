@@ -13,6 +13,7 @@
 - adpcm_a: {name: menu_ok, uri: "file://assets/sfx/menu_ok.wav"}
 - adpcm_a: {name: logo, uri: "file://assets/sfx/logo.wav"}
 - adpcm_a: {name: fire, uri: "file://assets/sfx/fire.wav"}
+- adpcm_a: {name: char_ok, uri: "file://assets/sfx/char_ok.wav"}
 - adpcm_a: {name: vo_round1, uri: "file://assets/sfx/vo_round1.wav"}
 - adpcm_a: {name: vo_round2, uri: "file://assets/sfx/vo_round2.wav"}
 - adpcm_a: {name: vo_final, uri: "file://assets/sfx/vo_final.wav"}

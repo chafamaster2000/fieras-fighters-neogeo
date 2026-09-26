@@ -6,7 +6,7 @@
 ;;;   FM1-FM4, ADPCM-A5 y A6 ... música (streams NSS generados desde assets/music/*.fur)
 ;;;   ADPCM-A1 ................. impactos: golpe, golpe fuerte, bloqueo, bola, K.O.
 ;;;   ADPCM-A2 ................. movimiento y UI: swing, cursor, fuego del título
-;;;   ADPCM-A3 ................. bola de energía, caída, confirmar, golpe del logo
+;;;   ADPCM-A3 ................. bola de energía, caída, confirmar, personaje elegido, golpe del logo
 ;;;   ADPCM-A4 ................. locutor (ROUND 1, FIGHT!, K.O....)
 ;;; Un efecto nuevo en el mismo canal corta al anterior (prioridad por
 ;;; recencia, como en los juegos de SNK). La música nunca pierde sus canales.
@@ -39,7 +39,7 @@ cmd_jmptable::
         jp      play_vo_fight          ; 19 VO_FIGHT
         jp      play_vo_ko             ; 20 VO_KO
         jp      play_vo_youwin         ; 21 VO_YOUWIN
-        jp      snd_command_unused     ; 22 libre
+        jp      play_char_ok           ; 22 CHAR_OK
         jp      snd_command_unused     ; 23 libre
         jp      music_title            ; 24 MUS_TITLE
         jp      music_select           ; 25 MUS_SELECT
@@ -98,6 +98,10 @@ play_logo:
 
 play_fire:
         ld      ix, #sfx_fire
+        jp      snd_adpcm_a_play
+
+play_char_ok:
+        ld      ix, #sfx_char_ok
         jp      snd_adpcm_a_play
 
 play_vo_round1:
@@ -233,6 +237,11 @@ sfx_fire:
         .db     FIRE_START_LSB, FIRE_START_MSB
         .db     FIRE_STOP_LSB, FIRE_STOP_MSB
         .db     1, 0xdb, 0x02   ; A2 movimiento/UI, vol 27
+
+sfx_char_ok:
+        .db     CHAR_OK_START_LSB, CHAR_OK_START_MSB
+        .db     CHAR_OK_STOP_LSB, CHAR_OK_STOP_MSB
+        .db     2, 0xdf, 0x04   ; A3 fuego/UI, vol 31
 
 sfx_vo_round1:
         .db     VO_ROUND1_START_LSB, VO_ROUND1_START_MSB
