@@ -15,7 +15,6 @@ body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 ui-monospace,
 .screen{position:relative;width:min(960px,100%,calc((100vh - 72px)*4/3));aspect-ratio:4/3;background:#000;border:1px solid var(--line)}
 canvas{position:absolute;inset:0;width:100%!important;height:100%!important;image-rendering:pixelated;outline:none}
 #go{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#000 url(titulo.png) center/contain no-repeat;cursor:pointer;border:0;color:#fff;font:inherit}
-#go span{background:#000c;padding:10px 22px;border:2px solid var(--fire);font-size:20px;letter-spacing:2px;margin-top:62%}
 #status{color:var(--muted);min-height:1.5em;margin:8px 0}
 main{width:min(960px,100%)}
 h2{color:var(--cyan);font-size:16px;letter-spacing:1px;margin:24px 0 8px}
@@ -33,7 +32,7 @@ a{color:var(--cyan)}
 <body>
 <div class="screen">
   <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
-  <button id="go" aria-label="Jugar"><span>CLIC PARA JUGAR</span></button>
+  <button id="go" aria-label="Jugar"></button>
 </div>
 <div id="status">Pide teclado. La primera vez baja unos 23 MB.</div>
 
