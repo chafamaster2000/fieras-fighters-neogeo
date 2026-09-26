@@ -1,4 +1,4 @@
-/* Generado por tools/neosprite.py char (ROBO): no editar a mano. */
+/* Generado por tools/neosprite.py char (ROBOCLICK): no editar a mano. */
 #include "character.h"
 #include "gen/assets.h"
 #include "gen/char_p1.h"
@@ -150,54 +150,54 @@ static const u16 tiles[2286] = {
 };
 
 static const cimg_t imgs[48] = {
-    {0, -40, -128, 6, 8},  /* art/src/characters/ROBO/idle/00.png */
-    {48, -40, -128, 6, 8},  /* art/src/characters/ROBO/idle/01.png */
-    {96, -40, -128, 6, 8},  /* art/src/characters/ROBO/idle/02.png */
-    {144, -56, -112, 7, 7},  /* art/src/characters/ROBO/idle/03.png */
-    {193, -40, -128, 6, 8},  /* art/src/characters/ROBO/idle/04.png */
-    {241, -40, -128, 6, 8},  /* art/src/characters/ROBO/walk/00.png */
-    {289, -40, -128, 6, 8},  /* art/src/characters/ROBO/walk/01.png */
-    {337, -40, -128, 6, 8},  /* art/src/characters/ROBO/walk/02.png */
-    {385, -40, -128, 6, 8},  /* art/src/characters/ROBO/walk/03.png */
-    {433, -56, -128, 7, 9},  /* art/src/characters/ROBO/walk/04.png */
-    {496, -40, -128, 6, 9},  /* art/src/characters/ROBO/walk/05.png */
-    {550, -40, -128, 6, 9},  /* art/src/characters/ROBO/walk/06.png */
-    {604, -40, -128, 6, 9},  /* art/src/characters/ROBO/walk/07.png */
-    {658, -40, -96, 6, 7},  /* art/src/characters/ROBO/crouch/00.png */
-    {700, -40, -96, 6, 7},  /* art/src/characters/ROBO/crouch/01.png */
-    {742, -40, -128, 6, 8},  /* art/src/characters/ROBO/jump/00.png */
-    {790, -40, -128, 6, 8},  /* art/src/characters/ROBO/jump/01.png */
-    {838, -40, -128, 6, 8},  /* art/src/characters/ROBO/jump/02.png */
-    {886, -40, -128, 6, 8},  /* art/src/characters/ROBO/jump/03.png */
-    {934, -40, -112, 6, 8},  /* art/src/characters/ROBO/punch/00.png */
-    {982, -40, -112, 7, 8},  /* art/src/characters/ROBO/punch/01.png */
-    {1038, -40, -128, 6, 8},  /* art/src/characters/ROBO/punch/02.png */
-    {1086, -40, -128, 6, 8},  /* art/src/characters/ROBO/kick/00.png */
-    {1134, -56, -128, 8, 8},  /* art/src/characters/ROBO/kick/01.png */
-    {1198, -40, -128, 6, 8},  /* art/src/characters/ROBO/kick/02.png */
-    {1246, -40, -128, 6, 8},  /* art/src/characters/ROBO/kick/03.png */
-    {1294, -40, -96, 7, 7},  /* art/src/characters/ROBO/crouch_punch/00.png */
-    {1343, -40, -96, 7, 7},  /* art/src/characters/ROBO/crouch_punch/01.png */
-    {1392, -40, -96, 7, 7},  /* art/src/characters/ROBO/crouch_punch/02.png */
-    {1441, -56, -112, 6, 8},  /* art/src/characters/ROBO/fireball/00.png */
-    {1489, -40, -112, 7, 8},  /* art/src/characters/ROBO/fireball/01.png */
-    {1545, -40, -112, 7, 8},  /* art/src/characters/ROBO/fireball/02.png */
-    {1601, -40, -112, 6, 8},  /* art/src/characters/ROBO/fireball/03.png */
-    {1649, -40, -112, 5, 8},  /* art/src/characters/ROBO/block/00.png */
-    {1689, -40, -112, 5, 8},  /* art/src/characters/ROBO/block/01.png */
-    {1729, -40, -96, 6, 7},  /* art/src/characters/ROBO/cblock/00.png */
-    {1771, -56, -112, 6, 7},  /* art/src/characters/ROBO/hit/00.png */
-    {1813, -56, -112, 6, 7},  /* art/src/characters/ROBO/hit/01.png */
-    {1855, -40, -128, 6, 8},  /* art/src/characters/ROBO/hit/02.png */
-    {1903, -72, -96, 7, 6},  /* art/src/characters/ROBO/knockdown/00.png */
-    {1945, -88, -96, 7, 6},  /* art/src/characters/ROBO/knockdown/01.png */
-    {1987, -104, -64, 8, 5},  /* art/src/characters/ROBO/knockdown/02.png */
-    {2027, -104, -64, 8, 5},  /* art/src/characters/ROBO/knockdown/03.png */
-    {2067, -56, -96, 6, 7},  /* art/src/characters/ROBO/knockdown/04.png */
-    {2109, -40, -112, 6, 7},  /* art/src/characters/ROBO/win/00.png */
-    {2151, -40, -128, 5, 9},  /* art/src/characters/ROBO/win/01.png */
-    {2196, -40, -128, 5, 9},  /* art/src/characters/ROBO/win/02.png */
-    {2241, -40, -128, 5, 9},  /* art/src/characters/ROBO/win/03.png */
+    {0, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/idle/00.png */
+    {48, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/idle/01.png */
+    {96, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/idle/02.png */
+    {144, -56, -112, 7, 7},  /* art/src/characters/ROBOCLICK/idle/03.png */
+    {193, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/idle/04.png */
+    {241, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/walk/00.png */
+    {289, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/walk/01.png */
+    {337, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/walk/02.png */
+    {385, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/walk/03.png */
+    {433, -56, -128, 7, 9},  /* art/src/characters/ROBOCLICK/walk/04.png */
+    {496, -40, -128, 6, 9},  /* art/src/characters/ROBOCLICK/walk/05.png */
+    {550, -40, -128, 6, 9},  /* art/src/characters/ROBOCLICK/walk/06.png */
+    {604, -40, -128, 6, 9},  /* art/src/characters/ROBOCLICK/walk/07.png */
+    {658, -40, -96, 6, 7},  /* art/src/characters/ROBOCLICK/crouch/00.png */
+    {700, -40, -96, 6, 7},  /* art/src/characters/ROBOCLICK/crouch/01.png */
+    {742, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/jump/00.png */
+    {790, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/jump/01.png */
+    {838, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/jump/02.png */
+    {886, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/jump/03.png */
+    {934, -40, -112, 6, 8},  /* art/src/characters/ROBOCLICK/punch/00.png */
+    {982, -40, -112, 7, 8},  /* art/src/characters/ROBOCLICK/punch/01.png */
+    {1038, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/punch/02.png */
+    {1086, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/kick/00.png */
+    {1134, -56, -128, 8, 8},  /* art/src/characters/ROBOCLICK/kick/01.png */
+    {1198, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/kick/02.png */
+    {1246, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/kick/03.png */
+    {1294, -40, -96, 7, 7},  /* art/src/characters/ROBOCLICK/crouch_punch/00.png */
+    {1343, -40, -96, 7, 7},  /* art/src/characters/ROBOCLICK/crouch_punch/01.png */
+    {1392, -40, -96, 7, 7},  /* art/src/characters/ROBOCLICK/crouch_punch/02.png */
+    {1441, -56, -112, 6, 8},  /* art/src/characters/ROBOCLICK/fireball/00.png */
+    {1489, -40, -112, 7, 8},  /* art/src/characters/ROBOCLICK/fireball/01.png */
+    {1545, -40, -112, 7, 8},  /* art/src/characters/ROBOCLICK/fireball/02.png */
+    {1601, -40, -112, 6, 8},  /* art/src/characters/ROBOCLICK/fireball/03.png */
+    {1649, -40, -112, 5, 8},  /* art/src/characters/ROBOCLICK/block/00.png */
+    {1689, -40, -112, 5, 8},  /* art/src/characters/ROBOCLICK/block/01.png */
+    {1729, -40, -96, 6, 7},  /* art/src/characters/ROBOCLICK/cblock/00.png */
+    {1771, -56, -112, 6, 7},  /* art/src/characters/ROBOCLICK/hit/00.png */
+    {1813, -56, -112, 6, 7},  /* art/src/characters/ROBOCLICK/hit/01.png */
+    {1855, -40, -128, 6, 8},  /* art/src/characters/ROBOCLICK/hit/02.png */
+    {1903, -72, -96, 7, 6},  /* art/src/characters/ROBOCLICK/knockdown/00.png */
+    {1945, -88, -96, 7, 6},  /* art/src/characters/ROBOCLICK/knockdown/01.png */
+    {1987, -104, -64, 8, 5},  /* art/src/characters/ROBOCLICK/knockdown/02.png */
+    {2027, -104, -64, 8, 5},  /* art/src/characters/ROBOCLICK/knockdown/03.png */
+    {2067, -56, -96, 6, 7},  /* art/src/characters/ROBOCLICK/knockdown/04.png */
+    {2109, -40, -112, 6, 7},  /* art/src/characters/ROBOCLICK/win/00.png */
+    {2151, -40, -128, 5, 9},  /* art/src/characters/ROBOCLICK/win/01.png */
+    {2196, -40, -128, 5, 9},  /* art/src/characters/ROBOCLICK/win/02.png */
+    {2241, -40, -128, 5, 9},  /* art/src/characters/ROBOCLICK/win/03.png */
 };
 
 static const frame_t frames[66] = {
@@ -295,4 +295,4 @@ static const anim_t anims[ANIM_COUNT] = {
 
 static const u16 pal[16] = {0x8000, 0x8000, 0x4112, 0x7111, 0x4455, 0x3666, 0x4098, 0xb888, 0x0f18, 0x3999, 0x10ba, 0x32cb, 0x3bbb, 0xd3fd, 0x0fff, 0x8000};
 
-const character_t char_p1 = {"ROBO", TILE_END, tiles, imgs, frames, anims, pal};
+const character_t char_p1 = {"ROBOCLICK", TILE_END, tiles, imgs, frames, anims, pal};

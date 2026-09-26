@@ -1,4 +1,4 @@
-/* Generado por tools/neosprite.py char (NINJA): no editar a mano. */
+/* Generado por tools/neosprite.py char (NINJAODA): no editar a mano. */
 #include "character.h"
 #include "gen/assets.h"
 #include "gen/char_p1.h"
@@ -146,54 +146,54 @@ static const u16 tiles[2203] = {
 };
 
 static const cimg_t imgs[48] = {
-    {0, -39, -125, 5, 8},  /* art/src/characters/NINJA/idle/00.png */
-    {40, -55, -125, 6, 8},  /* art/src/characters/NINJA/idle/01.png */
-    {88, -55, -125, 6, 8},  /* art/src/characters/NINJA/idle/02.png */
-    {136, -55, -125, 6, 8},  /* art/src/characters/NINJA/idle/03.png */
-    {184, -55, -125, 6, 8},  /* art/src/characters/NINJA/idle/04.png */
-    {232, -55, -125, 6, 8},  /* art/src/characters/NINJA/walk/00.png */
-    {280, -55, -125, 6, 8},  /* art/src/characters/NINJA/walk/01.png */
-    {328, -55, -125, 6, 8},  /* art/src/characters/NINJA/walk/02.png */
-    {376, -55, -125, 6, 8},  /* art/src/characters/NINJA/walk/03.png */
-    {424, -55, -125, 6, 8},  /* art/src/characters/NINJA/walk/04.png */
-    {472, -55, -125, 6, 8},  /* art/src/characters/NINJA/walk/05.png */
-    {520, -55, -125, 6, 8},  /* art/src/characters/NINJA/walk/06.png */
-    {568, -55, -125, 6, 8},  /* art/src/characters/NINJA/walk/07.png */
-    {616, -39, -93, 6, 6},  /* art/src/characters/NINJA/crouch/00.png */
-    {652, -55, -93, 7, 6},  /* art/src/characters/NINJA/crouch/01.png */
-    {694, -55, -125, 6, 8},  /* art/src/characters/NINJA/jump/00.png */
-    {742, -55, -125, 6, 8},  /* art/src/characters/NINJA/jump/01.png */
-    {790, -55, -125, 6, 8},  /* art/src/characters/NINJA/jump/02.png */
-    {838, -55, -125, 6, 8},  /* art/src/characters/NINJA/jump/03.png */
-    {886, -55, -125, 6, 8},  /* art/src/characters/NINJA/punch/00.png */
-    {934, -55, -109, 8, 7},  /* art/src/characters/NINJA/punch/01.png */
-    {990, -39, -125, 6, 8},  /* art/src/characters/NINJA/punch/02.png */
-    {1038, -39, -125, 6, 8},  /* art/src/characters/NINJA/kick/00.png */
-    {1086, -39, -125, 7, 8},  /* art/src/characters/NINJA/kick/01.png */
-    {1142, -39, -125, 6, 8},  /* art/src/characters/NINJA/kick/02.png */
-    {1190, -39, -125, 6, 8},  /* art/src/characters/NINJA/kick/03.png */
-    {1238, -39, -93, 6, 7},  /* art/src/characters/NINJA/crouch_punch/00.png */
-    {1280, -55, -93, 8, 6},  /* art/src/characters/NINJA/crouch_punch/01.png */
-    {1328, -39, -93, 6, 7},  /* art/src/characters/NINJA/crouch_punch/02.png */
-    {1370, -55, -109, 6, 7},  /* art/src/characters/NINJA/fireball/00.png */
-    {1412, -55, -109, 7, 7},  /* art/src/characters/NINJA/fireball/01.png */
-    {1461, -39, -109, 6, 7},  /* art/src/characters/NINJA/fireball/02.png */
-    {1503, -39, -109, 7, 7},  /* art/src/characters/NINJA/fireball/03.png */
-    {1552, -55, -109, 6, 7},  /* art/src/characters/NINJA/block/00.png */
-    {1594, -39, -109, 5, 7},  /* art/src/characters/NINJA/block/01.png */
-    {1629, -39, -93, 6, 6},  /* art/src/characters/NINJA/cblock/00.png */
-    {1665, -71, -125, 7, 8},  /* art/src/characters/NINJA/hit/00.png */
-    {1721, -71, -125, 7, 8},  /* art/src/characters/NINJA/hit/01.png */
-    {1777, -55, -125, 6, 8},  /* art/src/characters/NINJA/hit/02.png */
-    {1825, -87, -109, 8, 7},  /* art/src/characters/NINJA/knockdown/00.png */
-    {1881, -103, -61, 9, 5},  /* art/src/characters/NINJA/knockdown/01.png */
-    {1926, -103, -45, 9, 4},  /* art/src/characters/NINJA/knockdown/02.png */
-    {1962, -103, -45, 9, 4},  /* art/src/characters/NINJA/knockdown/03.png */
-    {1998, -55, -93, 6, 6},  /* art/src/characters/NINJA/knockdown/04.png */
-    {2034, -55, -109, 7, 7},  /* art/src/characters/NINJA/win/00.png */
-    {2083, -39, -125, 5, 8},  /* art/src/characters/NINJA/win/01.png */
-    {2123, -39, -125, 5, 8},  /* art/src/characters/NINJA/win/02.png */
-    {2163, -39, -125, 5, 8},  /* art/src/characters/NINJA/win/03.png */
+    {0, -39, -125, 5, 8},  /* art/src/characters/NINJAODA/idle/00.png */
+    {40, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/idle/01.png */
+    {88, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/idle/02.png */
+    {136, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/idle/03.png */
+    {184, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/idle/04.png */
+    {232, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/walk/00.png */
+    {280, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/walk/01.png */
+    {328, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/walk/02.png */
+    {376, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/walk/03.png */
+    {424, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/walk/04.png */
+    {472, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/walk/05.png */
+    {520, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/walk/06.png */
+    {568, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/walk/07.png */
+    {616, -39, -93, 6, 6},  /* art/src/characters/NINJAODA/crouch/00.png */
+    {652, -55, -93, 7, 6},  /* art/src/characters/NINJAODA/crouch/01.png */
+    {694, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/jump/00.png */
+    {742, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/jump/01.png */
+    {790, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/jump/02.png */
+    {838, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/jump/03.png */
+    {886, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/punch/00.png */
+    {934, -55, -109, 8, 7},  /* art/src/characters/NINJAODA/punch/01.png */
+    {990, -39, -125, 6, 8},  /* art/src/characters/NINJAODA/punch/02.png */
+    {1038, -39, -125, 6, 8},  /* art/src/characters/NINJAODA/kick/00.png */
+    {1086, -39, -125, 7, 8},  /* art/src/characters/NINJAODA/kick/01.png */
+    {1142, -39, -125, 6, 8},  /* art/src/characters/NINJAODA/kick/02.png */
+    {1190, -39, -125, 6, 8},  /* art/src/characters/NINJAODA/kick/03.png */
+    {1238, -39, -93, 6, 7},  /* art/src/characters/NINJAODA/crouch_punch/00.png */
+    {1280, -55, -93, 8, 6},  /* art/src/characters/NINJAODA/crouch_punch/01.png */
+    {1328, -39, -93, 6, 7},  /* art/src/characters/NINJAODA/crouch_punch/02.png */
+    {1370, -55, -109, 6, 7},  /* art/src/characters/NINJAODA/fireball/00.png */
+    {1412, -55, -109, 7, 7},  /* art/src/characters/NINJAODA/fireball/01.png */
+    {1461, -39, -109, 6, 7},  /* art/src/characters/NINJAODA/fireball/02.png */
+    {1503, -39, -109, 7, 7},  /* art/src/characters/NINJAODA/fireball/03.png */
+    {1552, -55, -109, 6, 7},  /* art/src/characters/NINJAODA/block/00.png */
+    {1594, -39, -109, 5, 7},  /* art/src/characters/NINJAODA/block/01.png */
+    {1629, -39, -93, 6, 6},  /* art/src/characters/NINJAODA/cblock/00.png */
+    {1665, -71, -125, 7, 8},  /* art/src/characters/NINJAODA/hit/00.png */
+    {1721, -71, -125, 7, 8},  /* art/src/characters/NINJAODA/hit/01.png */
+    {1777, -55, -125, 6, 8},  /* art/src/characters/NINJAODA/hit/02.png */
+    {1825, -87, -109, 8, 7},  /* art/src/characters/NINJAODA/knockdown/00.png */
+    {1881, -103, -61, 9, 5},  /* art/src/characters/NINJAODA/knockdown/01.png */
+    {1926, -103, -45, 9, 4},  /* art/src/characters/NINJAODA/knockdown/02.png */
+    {1962, -103, -45, 9, 4},  /* art/src/characters/NINJAODA/knockdown/03.png */
+    {1998, -55, -93, 6, 6},  /* art/src/characters/NINJAODA/knockdown/04.png */
+    {2034, -55, -109, 7, 7},  /* art/src/characters/NINJAODA/win/00.png */
+    {2083, -39, -125, 5, 8},  /* art/src/characters/NINJAODA/win/01.png */
+    {2123, -39, -125, 5, 8},  /* art/src/characters/NINJAODA/win/02.png */
+    {2163, -39, -125, 5, 8},  /* art/src/characters/NINJAODA/win/03.png */
 };
 
 static const frame_t frames[66] = {
@@ -291,7 +291,7 @@ static const anim_t anims[ANIM_COUNT] = {
 
 static const u16 pal[16] = {0x8000, 0x8000, 0x3000, 0x4112, 0x8222, 0x1123, 0x2236, 0x0344, 0x4466, 0x4598, 0x2f08, 0x00cb, 0x01dc, 0x1ccb, 0xffff, 0x8000};
 
-const character_t char_p2 = {"NINJA", (TILE_END + CHAR_P1_TILES), tiles, imgs, frames, anims, pal};
+const character_t char_p2 = {"NINJAODA", (TILE_END + CHAR_P1_TILES), tiles, imgs, frames, anims, pal};
 
 /* la C-ROM de 2 MB tiene 16384 tiles */
 typedef char crom_fits[(TILE_END + CHAR_P1_TILES + CHAR_P2_TILES <= 16384) ? 1 : -1];

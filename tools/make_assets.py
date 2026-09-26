@@ -356,7 +356,7 @@ POSE_SRC.update({"walk%d" % i: ("walk", i) for i in range(6)})
 FLAG_NAMES = [(F_ACTIVE, "ACTIVE"), (F_LOW, "LOW"), (F_OVERHEAD, "OVERHEAD"), (F_SPAWN, "SPAWN")]
 
 # personajes procedurales: nombre -> paleta (P2 es un palette swap, como hoy)
-PROCEDURAL_CHARS = {"ROBO": FIGHTER_PAL, "NINJA": FIGHTER_PAL_P2}
+PROCEDURAL_CHARS = {"ROBOCLICK": FIGHTER_PAL, "NINJAODA": FIGHTER_PAL_P2}
 PROC_DIR = os.path.join(ROOT, "art", "tmp-procedural")
 EXPORT_W = 176
 

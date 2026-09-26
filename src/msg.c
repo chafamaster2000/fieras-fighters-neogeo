@@ -2,7 +2,7 @@
 #include "hw.h"
 #include "gen/assets.h"
 
-#define MAX_CHARS 12
+#define MAX_CHARS 16
 #define MSG_Y     70            // centro vertical: debajo del HUD, sobre las cabezas
 
 static u8 len, t, active, hmax;

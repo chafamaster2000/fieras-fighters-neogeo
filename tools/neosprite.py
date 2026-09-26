@@ -2,7 +2,7 @@
 """neosprite: convierte arte PNG en datos Neo Geo para este motor.
 
 Subcomandos (detalle y contrato de entrada en tools/README-neosprite.md):
-  char <dir> --name ROBO     personaje: paleta de 15 colores, ancla fija, tiles
+  char <dir> --name ROBOCLICK     personaje: paleta de 15 colores, ancla fija, tiles
                              16x16 con dedupe por flips, recorte por frame, cajas
                              -> assets/char_<slot>.gif, assets/char_<slot>.json,
                                 src/gen/char_<slot>.c/.h (y assets/metrics.json para P1)
@@ -33,7 +33,7 @@ sys.path.insert(0, HERE)
 import make_assets as MA  # noqa: E402  (constantes del escenario, packed15)
 
 # Nombre -> ranura en la C-ROM. P1 va primero, P2 a continuación.
-SLOTS = {"ROBO": "p1", "NINJA": "p2"}
+SLOTS = {"ROBOCLICK": "p1", "NINJAODA": "p2"}
 PROC_DIR = os.path.join(ROOT, "art", "tmp-procedural")
 # frame data del juego (tools/framedata.json): pisa las duraciones del arte en los golpes
 _fd = os.path.join(os.path.dirname(os.path.abspath(__file__)), "framedata.json")
@@ -565,7 +565,7 @@ def build_char(args):
     fb = None
     fb_dir = args.fallback or os.path.join(PROC_DIR, name)
     if not args.fallback and not os.path.isdir(fb_dir):
-        fb_dir = os.path.join(PROC_DIR, "ROBO")
+        fb_dir = os.path.join(PROC_DIR, "ROBOCLICK")
     if not args.no_fallback and os.path.isdir(fb_dir) and os.path.abspath(fb_dir) != prim.path:
         fb = Source(os.path.abspath(fb_dir), True, log=log)
 
@@ -1215,7 +1215,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("char", help="personaje -> tiles, paleta, frames y cajas")
     c.add_argument("dir", help="carpeta del personaje (art/src/characters/<NOMBRE>)")
-    c.add_argument("--name", required=True, help="nombre del personaje (ROBO, NINJA)")
+    c.add_argument("--name", required=True, help="nombre del personaje (ROBOCLICK, NINJAODA)")
     c.add_argument("--slot", choices=["p1", "p2"], help="ranura en la C-ROM (por defecto según el nombre)")
     c.add_argument("--palette-from", help="PNG de referencia para la paleta (colores opacos)")
     c.add_argument("--anchor", help="X,Y del ancla en el lienzo de entrada (por defecto: pies del idle 0)")
@@ -1228,7 +1228,7 @@ def main():
     s = sub.add_parser("stage", help="capas del escenario")
     s.add_argument("dir", help="carpeta con sky.png, city.png, floor.png (art/src/stage)")
     p = sub.add_parser("preview", help="visor HTML de un personaje ya convertido")
-    p.add_argument("name", help="ROBO, NINJA, p1 o p2")
+    p.add_argument("name", help="ROBOCLICK, NINJAODA, p1 o p2")
     a = ap.parse_args()
     if a.cmd == "char":
         build_char(a)

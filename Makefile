@@ -151,7 +151,7 @@ $(BUILDDIR)/assets/samples.inc: assets/samples-map.yaml $(wildcard assets/sfx/*.
 
 # Regenerar assets placeholder (gráficos, paletas, animaciones y sonidos).
 # Los luchadores procedurales pasan por el mismo conversor que el arte real.
-CHARS=ROBO NINJA
+CHARS=ROBOCLICK NINJAODA
 assets:
 	python3 tools/make_assets.py
 	for n in $(CHARS); do python3 tools/neosprite.py char art/tmp-procedural/$$n --name $$n || exit 1; done
