@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIERAS FIGHTERS</title>
+<meta name="description" content="Fighting de Neo Geo en una Córdoba, Argentina, postapocalíptica. Jugalo en el navegador.">
+<meta property="og:title" content="FIERAS FIGHTERS">
+<meta property="og:description" content="Fighting de Neo Geo en una Córdoba postapocalíptica. Jugalo en el navegador.">
+<meta property="og:image" content="titulo.png">
+<style>
+:root{--bg:#07060c;--panel:#12101c;--line:#2a2540;--text:#e6e3f2;--muted:#9a94b5;--cyan:#00b7b2;--fire:#ff8a1f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 ui-monospace,Menlo,Consolas,monospace;display:flex;flex-direction:column;align-items:center;padding:16px}
+.screen{position:relative;width:min(960px,100%,calc((100vh - 72px)*4/3));aspect-ratio:4/3;background:#000;border:1px solid var(--line)}
+canvas{position:absolute;inset:0;width:100%!important;height:100%!important;image-rendering:pixelated;outline:none}
+#go{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#000 url(titulo.png) center/contain no-repeat;cursor:pointer;border:0;color:#fff;font:inherit}
+#go span{background:#000c;padding:10px 22px;border:2px solid var(--fire);font-size:20px;letter-spacing:2px;margin-top:62%}
+#status{color:var(--muted);min-height:1.5em;margin:8px 0}
+main{width:min(960px,100%)}
+h2{color:var(--cyan);font-size:16px;letter-spacing:1px;margin:24px 0 8px}
+table{border-collapse:collapse;width:100%;background:var(--panel)}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left}
+th{color:var(--muted);font-weight:normal}
+kbd{background:#221e33;border:1px solid var(--line);border-bottom-width:2px;padding:0 6px;border-radius:3px;color:#fff}
+ul{padding-left:20px;margin:0}
+li{margin:4px 0}
+footer{color:var(--muted);font-size:12px;margin:32px 0 8px}
+a{color:var(--cyan)}
+.wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="screen">
+  <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()"></canvas>
+  <button id="go" aria-label="Jugar"><span>CLIC PARA JUGAR</span></button>
+</div>
+<div id="status">Pide teclado. La primera vez baja unos 23 MB.</div>
+
+<main>
+<h2>Controles</h2>
+<div class="wrap"><table>
+<tr><th></th><th>Mover</th><th>Golpe</th><th>Patada</th><th>START</th></tr>
+<tr><td>Jugador 1</td><td>flechas</td><td><kbd>Z</kbd></td><td><kbd>X</kbd></td><td><kbd>1</kbd> o <kbd>Enter</kbd></td></tr>
+<tr><td>Jugador 2</td><td><kbd>R</kbd> <kbd>F</kbd> <kbd>D</kbd> <kbd>G</kbd></td><td><kbd>A</kbd></td><td><kbd>S</kbd></td><td><kbd>2</kbd></td></tr>
+</table></div>
+
+<h2>Movimientos y trucos</h2>
+<ul>
+<li>Bola de energía: <kbd>↓</kbd> <kbd>↘</kbd> <kbd>→</kbd> + golpe (mirando a la derecha).</li>
+<li>Golpe bajo: agachado + golpe. Patada aérea: en el aire + patada.</li>
+<li>Guardia: atrás, parado o agachado.</li>
+<li>En el selector, golpe elige el color normal y patada el alternativo.</li>
+<li>El jugador 2 entra en cualquier momento apretando <kbd>2</kbd>.</li>
+<li>Directo a la pelea: mantené <kbd>V</kbd> (botón D) y apretá <kbd>1</kbd> en el título.</li>
+<li>Pausa: <kbd>P</kbd>. Reiniciar: <kbd>F3</kbd>.</li>
+</ul>
+
+<h2>Controls (English)</h2>
+<ul>
+<li>Player 1: arrows to move, <kbd>Z</kbd> punch, <kbd>X</kbd> kick, <kbd>1</kbd>/<kbd>Enter</kbd> start. Player 2: <kbd>R</kbd><kbd>F</kbd><kbd>D</kbd><kbd>G</kbd>, <kbd>A</kbd>, <kbd>S</kbd>, <kbd>2</kbd>.</li>
+<li>Fireball: down, down-forward, forward + punch. Hold <kbd>V</kbd> and press <kbd>1</kbd> on the title to skip straight to a fight. <kbd>P</kbd> pauses.</li>
+</ul>
+
+<footer>
+<a href="https://github.com/chafamaster2000/fieras-fighters-neogeo">Código y ROM</a> ·
+Emulador: <a href="https://www.mamedev.org/">MAME</a> 0.244 compilado a WebAssembly por
+<a href="https://github.com/jeffreyhockema/mame-wasm-build">mame-wasm-build</a> (GPL-2.0, <a href="https://github.com/mamedev/mame/tree/mame0244">código fuente</a>) ·
+BIOS: nullbios de <a href="https://github.com/dciabrin/ngdevkit">ngdevkit</a> ·
+Necesita teclado; en celular no se puede jugar.
+</footer>
+</main>
+
+<script>
+const status=document.getElementById('status');
+const FILES={'/roms/fighter.zip':'game/fighter.zip','/roms/aes.zip':'game/aes.zip','/roms/neogeo.zip':'game/neogeo.zip','/hash/neogeo.xml':'game/neogeo.xml','/ctrlr/teclado.cfg':'game/teclado.cfg'};
+var Module={
+  canvas:document.getElementById('canvas'),
+  arguments:['aes','-cart','fighter','-rompath','/roms','-hashpath','/hash','-ctrlrpath','/ctrlr','-ctrlr','teclado',
+             '-skip_gameinfo','-window','-resolution','960x720','-keepaspect','-noreadconfig'],
+  print:()=>{},printErr:()=>{},
+  setStatus:t=>{status.textContent=t||'Jugando. Si no responde el teclado, hacé clic en la pantalla.'},
+  preRun:[()=>{
+    Module.addRunDependency('game');
+    Promise.all(Object.entries(FILES).map(async([dst,src])=>{
+      const b=new Uint8Array(await (await fetch(src)).arrayBuffer());
+      const i=dst.lastIndexOf('/');
+      Module.FS_createPath('/',dst.slice(1,i),true,true);
+      Module.FS_createDataFile(dst.slice(0,i),dst.slice(i+1),b,true,true);
+    })).then(()=>Module.removeRunDependency('game'));
+  }]
+};
+// que las flechas y la barra no muevan la página mientras se juega
+window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault()},{passive:false});
+document.getElementById('go').onclick=e=>{
+  e.currentTarget.remove();
+  status.textContent='Cargando el emulador…';
+  const s=document.createElement('script');s.src='neogeo.js';document.body.appendChild(s);
+  document.getElementById('canvas').focus();
+};
+document.getElementById('canvas').addEventListener('click',e=>e.currentTarget.focus());
+</script>
+</body>
+</html>
