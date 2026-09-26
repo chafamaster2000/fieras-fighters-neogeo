@@ -85,8 +85,8 @@ $(SROM1): $(BUILDDIR)/assets/base-srom-text-shadow.fix $(BUILDDIR)/assets/hud.fi
 # logo during the attract mode.
 # Note: build rules (%.gif -> %.c<1,2>) are defined in Makefile.build
 # El orden define el número de tile y tiene que coincidir con tools/make_assets.py:
-# logo del BIOS (0-255) -> luchador -> efectos -> cielo -> ciudad -> calle
-CROM_PARTS=base-crom-logo fighter fx sky city street
+# logo del BIOS (0-255) -> luchador -> efectos -> cielo -> ciudad -> piso (5 franjas) -> fuente
+CROM_PARTS=base-crom-logo fighter fx proj sky city floor0 floor1 floor2 floor3 floor4 font
 $(CROM1): $(CROM_PARTS:%=$(BUILDDIR)/assets/%.c1)
 $(CROM2): $(CROM_PARTS:%=$(BUILDDIR)/assets/%.c2)
 

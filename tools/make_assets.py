@@ -117,8 +117,8 @@ PANTS = (8, 9, 10)
 GLOVE = (13, 13, 14)
 HAIR = (12, 11, 11)
 
-L_TORSO, L_NECK, R_HEAD = 32, 5, 9
-L_UARM, L_FARM = 19, 17
+L_TORSO, L_NECK, R_HEAD = 32, 5, 10
+L_UARM, L_FARM = 22, 20
 L_THIGH, L_SHIN = 26, 26
 
 
@@ -167,7 +167,7 @@ def solve(pose):
     head = add(neck, vup(t + pose.get("head", 0)), L_NECK + R_HEAD)
     j = {"hip": hip, "neck": neck, "head": head, "t": t}
     for side, sx in (("f", 3), ("b", -3)):
-        sh = add(neck, (sx, 3))
+        sh = add(neck, (sx + (pose.get("shf", 0) if side == "f" else 0), 3))
         s, e = pose["arm_" + side]
         el = add(sh, vdown(s), L_UARM)
         ha = add(el, vdown(s + e), L_FARM)
@@ -188,17 +188,21 @@ def draw_pose(pose):
     j = solve(pose)
 
     def arm(s):
-        capsule(d, j["sh" + s], j["el" + s], 9, SKIN if s == "f" else (3, 4, 4))
-        capsule(d, j["el" + s], j["ha" + s], 8, SKIN if s == "f" else (3, 4, 4))
+        sh = j["sh" + s]
+        d.ellipse([sh[0] - 8, sh[1] - 7, sh[0] + 8, sh[1] + 8], fill=1)
+        d.ellipse([sh[0] - 7, sh[1] - 6, sh[0] + 7, sh[1] + 7], fill=6 if s == "f" else 7)
+        capsule(d, j["sh" + s], j["el" + s], 11, SKIN if s == "f" else (3, 4, 4))
+        capsule(d, j["el" + s], j["ha" + s], 10, SKIN if s == "f" else (3, 4, 4))
         h = j["ha" + s]
-        d.ellipse([h[0] - 6, h[1] - 6, h[0] + 6, h[1] + 6], fill=1)
-        d.ellipse([h[0] - 5, h[1] - 5, h[0] + 5, h[1] + 5], fill=13 if s == "f" else 14)
+        d.ellipse([h[0] - 8, h[1] - 7, h[0] + 8, h[1] + 7], fill=1)
+        d.ellipse([h[0] - 7, h[1] - 6, h[0] + 7, h[1] + 6], fill=13 if s == "f" else 14)
+        d.line([(h[0] - 3, h[1] - 5), (h[0] - 3, h[1] + 5)], fill=14)
 
     def leg(s):
         cols = PANTS if s == "f" else (9, 10, 10)
-        capsule(d, j["hp" + s], j["kn" + s], 13, cols)
-        capsule(d, j["kn" + s], j["an" + s], 11, cols)
-        capsule(d, j["an" + s], j["toe" + s], 6, GLOVE)
+        capsule(d, j["hp" + s], j["kn" + s], 15, cols)
+        capsule(d, j["kn" + s], j["an" + s], 13, cols)
+        capsule(d, j["an" + s], j["toe" + s], 9, GLOVE)
 
     arm("b")
     leg("b")
@@ -206,8 +210,8 @@ def draw_pose(pose):
     hip, neck, t = j["hip"], j["neck"], j["t"]
     ux, uy = vup(t)
     px, py = -uy, ux                      # perpendicular
-    pts = [add(add(hip, (px, py), 9), (0, 0)), add(hip, (px, py), -9),
-           add(neck, (px, py), -13), add(neck, (px, py), 13)]
+    pts = [add(add(hip, (px, py), 11), (0, 0)), add(hip, (px, py), -11),
+           add(neck, (px, py), -18), add(neck, (px, py), 18)]
     d.polygon(pts, fill=1)
     inner = [add(pts[0], (-px, -py), 1), add(pts[1], (px, py), 1),
              add(pts[2], (px, py), 1), add(pts[3], (-px, -py), 1)]
@@ -247,7 +251,7 @@ def rel(box):
     return (clamp(x), clamp(y), clamp(w), clamp(h))
 
 
-GUARD = dict(torso=8, arm_f=(48, 88), arm_b=(26, 104), leg_f=(20, 12), leg_b=(-18, 8))
+GUARD = dict(hy=-52, torso=16, head=-4, arm_f=(58, 118), arm_b=(36, 126), leg_f=(30, 32), leg_b=(-22, 26))
 
 
 def P(**kw):
@@ -259,33 +263,34 @@ def P(**kw):
 def walk(i, n=6):
     ph = 2 * math.pi * i / n
     s = math.sin(ph)
-    return P(hy=-56 + int(abs(math.cos(ph)) * 2), leg_f=(18 * s + 2, 10 + max(0, 18 * math.cos(ph))),
-             leg_b=(-18 * s - 2, 10 + max(0, -18 * math.cos(ph))), arm_f=(48 - 6 * s, 88), arm_b=(26 + 6 * s, 104))
+    return P(hy=-53 + int(abs(math.cos(ph)) * 2), leg_f=(20 * s + 6, 24 + max(0, 18 * math.cos(ph))),
+             leg_b=(-20 * s - 6, 20 + max(0, -18 * math.cos(ph))), arm_f=(58 - 6 * s, 118), arm_b=(36 + 6 * s, 126))
 
 
 CROUCH = dict(hy=-31, torso=20, leg_f=(80, 112), leg_b=(34, 126))
 
 POSES = {
-    "idle0": P(hy=-56), "idle1": P(hy=-55, arm_f=(46, 90)), "idle2": P(hy=-54, arm_f=(44, 92), arm_b=(24, 106)),
+    "idle0": P(), "idle1": P(hy=-51, arm_f=(56, 120)), "idle2": P(hy=-50, arm_f=(54, 122), arm_b=(34, 128)),
     "crouch": P(**CROUCH),
     "crouch_t": P(hy=-42, torso=14, leg_f=(50, 70), leg_b=(10, 80)),
     "prejump": P(hy=-44, torso=12, leg_f=(40, 60), leg_b=(0, 60)),
     "air_up": P(hy=-66, torso=4, leg_f=(64, 110), leg_b=(20, 110), arm_f=(80, 70), arm_b=(60, 90)),
     "air_down": P(hy=-62, torso=0, leg_f=(30, 40), leg_b=(-10, 30), arm_f=(70, 60), arm_b=(40, 80)),
-    "p_start": P(torso=10, arm_f=(30, 110), arm_b=(40, 96)),
-    "p_active": P(torso=18, hx=4, arm_f=(92, 2), arm_b=(20, 110), leg_f=(26, 10)),
-    "k_start": P(torso=0, leg_f=(76, 110), arm_f=(40, 90), arm_b=(10, 100)),
-    "k_active": P(torso=-14, hx=-2, leg_f=(92, 4), leg_b=(-6, 6), arm_f=(30, 90), arm_b=(-10, 90)),
+    "p_start": P(torso=14, hx=3, arm_f=(20, 130), arm_b=(30, 100), leg_f=(30, 20)),
+    "p_recover": P(torso=24, hx=7, hy=-50, arm_f=(80, 50), arm_b=(-20, 130), leg_f=(42, 40), leg_b=(-30, 6)),
+    "p_active": P(torso=36, hx=12, hy=-48, head=-14, shf=9, arm_f=(96, -4), arm_b=(-50, 140), leg_f=(50, 52), leg_b=(-34, 0)),
+    "k_start": P(torso=-6, hy=-54, leg_f=(96, 140), leg_b=(-8, 14), arm_f=(40, 120), arm_b=(-20, 100)),
+    "k_active": P(torso=-30, hx=-6, hy=-54, head=12, leg_f=(96, 0), leg_b=(-12, 20), arm_f=(-20, 60), arm_b=(-70, 40)),
     "cp_start": P(**CROUCH, arm_f=(40, 100)),
     "cp_active": P(**dict(CROUCH, torso=26), arm_f=(96, 0)),
     "jk_active": P(hy=-62, torso=-6, leg_f=(58, 0), leg_b=(30, 110), arm_f=(60, 80), arm_b=(20, 90)),
     "fb_wind": P(torso=-6, hx=-3, arm_f=(-40, 70), arm_b=(-50, 60), leg_f=(24, 10), leg_b=(-20, 6)),
     "fb_release": P(torso=22, hx=6, arm_f=(92, 0), arm_b=(84, 8), leg_f=(38, 20), leg_b=(-30, 0)),
-    "block": P(torso=-6, hx=-3, arm_f=(64, 120), arm_b=(52, 128)),
-    "cblock": P(**CROUCH, arm_f=(70, 120), arm_b=(58, 128)),
-    "hit0": P(torso=-22, hx=-4, head=-10, arm_f=(-10, 40), arm_b=(-30, 30), leg_f=(22, 6)),
-    "hit1": P(torso=-12, hx=-2, head=-6, arm_f=(10, 60), arm_b=(-10, 50)),
-    "chit": P(**dict(CROUCH, torso=0), head=-10, arm_f=(10, 60), arm_b=(-10, 50)),
+    "block": P(torso=-8, hx=-4, head=-8, arm_f=(40, 135), arm_b=(70, 110), leg_f=(24, 20), leg_b=(-22, 14)),
+    "cblock": P(**dict(CROUCH, torso=6), head=-8, arm_f=(40, 135), arm_b=(70, 110)),
+    "hit0": P(torso=-38, hx=-10, hy=-50, head=-24, arm_f=(-40, 20), arm_b=(-70, 20), leg_f=(40, 10), leg_b=(-24, 30)),
+    "hit1": P(torso=-24, hx=-6, hy=-51, head=-14, arm_f=(-10, 50), arm_b=(-40, 40), leg_f=(34, 16), leg_b=(-22, 24)),
+    "chit": P(**dict(CROUCH, torso=-20), head=-22, arm_f=(-30, 40), arm_b=(-60, 30)),
     "kd0": P(hy=-50, torso=-45, head=-10, leg_f=(50, 20), leg_b=(20, 10), arm_f=(-40, 30), arm_b=(-60, 20)),
     "kd1": P(hy=-26, torso=-78, leg_f=(70, 20), leg_b=(50, 10), arm_f=(-80, 20), arm_b=(-100, 10)),
     "lying": P(hy=-8, hx=8, torso=-92, head=4, leg_f=(88, 2), leg_b=(84, 0), arm_f=(-100, 10), arm_b=(-120, 10)),
@@ -310,7 +315,7 @@ ANIMS = [
     ("AIR_UP", 1, [("air_up", 60, 0)], None),
     ("AIR_DOWN", 1, [("air_down", 60, 0)], None),
     ("LAND", 0, [("prejump", 4, 0)], None),
-    ("PUNCH", 0, [("p_start", 3, 0), ("p_active", 3, F_ACTIVE), ("p_start", 6, 0)], "haf"),
+    ("PUNCH", 0, [("p_start", 3, 0), ("p_active", 3, F_ACTIVE), ("p_recover", 6, 0)], "haf"),
     ("KICK", 0, [("k_start", 5, 0), ("k_active", 4, F_ACTIVE), ("k_start", 10, 0)], "toef"),
     ("CPUNCH", 0, [("cp_start", 3, 0), ("cp_active", 3, F_ACTIVE | F_LOW), ("cp_start", 7, 0)], "haf"),
     ("JKICK", 1, [("jk_active", 60, F_ACTIVE | F_OVERHEAD)], "toef"),
@@ -372,26 +377,66 @@ def build_fx(tile_base):
             x = ox + 6 + int(4 * math.cos(a))
             y = 16 + int(9 * math.sin(a))
             d.point([(x, y), (x - 2, y)], fill=3)
-    for f in range(3):                          # chispa: x = 96, 128, 160
+    for f in range(3):                          # chispa de golpe: x = 96, 128, 160
         ox = 96 + f * 32
-        r = [6, 12, 15][f]
-        for k in range(8):
-            a = k * math.pi / 4 + f * 0.3
-            rr = r if k % 2 == 0 else r * 0.55
-            d.line([(ox + 16, 16), (ox + 16 + rr * math.cos(a), 16 + rr * math.sin(a))],
-                   fill=[6, 7, 8][f], width=3 - (f == 2))
-        d.ellipse([ox + 16 - 4 + f, 12 + f, ox + 16 + 4 - f, 20 - f], fill=2 if f < 2 else 7)
+        r = [15, 15, 13][f]
+        pts = []
+        for k in range(16):
+            a = k * math.pi / 8 + f * 0.25
+            rr = r if k % 2 == 0 else r * [0.55, 0.4, 0.3][f]
+            pts.append((ox + 16 + rr * math.cos(a), 16 + rr * math.sin(a)))
+        d.polygon(pts, fill=[8, 8, 9][f], outline=1)
+        inner = [(ox + 16 + (x - ox - 16) * 0.72, 16 + (y - 16) * 0.72) for x, y in pts]
+        d.polygon(inner, fill=[7, 7, 8][f])
+        d.ellipse([ox + 16 - 5 + f, 11 + f, ox + 16 + 5 - f, 21 - f], fill=[6, 6, 7][f])
+        d.ellipse([ox + 16 - 2, 14, ox + 16 + 2, 18], fill=[2, 6, 7][f])
     # sombra con trama (en Neo Geo no hay transparencia): x = 192..223, y 8..24
     for y in range(10, 22):
         for x in range(192, 224):
             if ((x - 208) / 15.0) ** 2 + ((y - 16) / 5.5) ** 2 <= 1 and (x + y) % 2 == 0:
                 img.putpixel((x, y), 10)
-    # bloqueo: chispa azul, x = 224
-    d.ellipse([224 + 8, 8, 224 + 24, 24], outline=4, width=2)
-    d.ellipse([224 + 12, 12, 224 + 20, 20], fill=3)
+    # bloqueo: destello de escudo cian con forma de rombo, x = 224
+    cx = 224 + 16
+    d.polygon([(cx, 1), (cx + 14, 16), (cx, 31), (cx - 14, 16)], fill=1)
+    d.polygon([(cx, 3), (cx + 12, 16), (cx, 29), (cx - 12, 16)], fill=4)
+    d.polygon([(cx, 7), (cx + 8, 16), (cx, 25), (cx - 8, 16)], fill=3)
+    d.polygon([(cx, 11), (cx + 4, 16), (cx, 21), (cx - 4, 16)], fill=2)
+    d.line([(cx - 15, 16), (cx + 15, 16)], fill=2)
     tiles = tiles_of(img)                      # fila 0 y fila 1 de 16px
     save_gif(img, "fx.gif")
     return len(tiles)
+
+
+
+
+PROJ_PAL = [(255, 0, 255), (10, 10, 40), (255, 255, 255), (190, 240, 255), (110, 200, 255),
+            (40, 120, 255), (20, 50, 190), (60, 30, 140), (150, 110, 255), (220, 200, 255)]
+
+
+def build_proj():
+    img = new_p(48 * 3, 48, PROJ_PAL)
+    d = ImageDraw.Draw(img)
+    for f in range(3):
+        ox, cx, cy = f * 48, f * 48 + 30, 24
+        for k in range(5):                                          # estela hacia atrás
+            tx = cx - 14 - k * 5
+            r = 9 - k * 1.5 + (f % 2)
+            d.ellipse([tx - r, cy - r * 0.6 + (k % 2) * 2, tx + r, cy + r * 0.6 + (k % 2) * 2], fill=[7, 6, 7, 1, 7][k])
+        r = 16 + f
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=1)          # halo
+        d.ellipse([cx - r + 2, cy - r + 2, cx + r - 2, cy + r - 2], fill=6)
+        d.ellipse([cx - r + 5, cy - r + 5, cx + r - 5, cy + r - 5], fill=5)
+        d.ellipse([cx - 9, cy - 9, cx + 9, cy + 9], fill=4)
+        d.ellipse([cx - 6, cy - 6, cx + 6, cy + 6], fill=3)
+        d.ellipse([cx - 3, cy - 3, cx + 3, cy + 3], fill=2)
+        for k in range(6):                                          # rayos que giran
+            a = k * math.pi / 3 + f * 0.5
+            d.line([(cx + 8 * math.cos(a), cy + 8 * math.sin(a)), (cx + (r - 1) * math.cos(a), cy + (r - 1) * math.sin(a))], fill=9)
+        for k in range(8):
+            a = k * math.pi / 4 + f
+            d.point([(cx + (r + 3) * math.cos(a), cy + (r + 3) * math.sin(a))], fill=8)
+    save_gif(img, "proj.gif")
+    return 9 * 3
 
 
 # --------------------------------------------------------------------------
@@ -399,26 +444,32 @@ def build_fx(tile_base):
 # --------------------------------------------------------------------------
 
 CAM_RANGE = 192                                # recorrido de cámara en px
-LAYERS = [  # nombre, shift (ratio = 1/2^shift), alto en tiles, y en pantalla
-    ("sky", 2, 9, 0),
-    ("city", 1, 10, 16),
-    ("street", 0, 5, 144),
+# nombre, ratio en dieciseisavos, alto en tiles, y en pantalla
+LAYERS = [
+    ("sky", 4, 9, 0),
+    ("city", 8, 10, 16),
+    ("floor0", 10, 1, 144),
+    ("floor1", 12, 1, 160),
+    ("floor2", 14, 1, 176),
+    ("floor3", 16, 1, 192),     # la franja donde apoyan los pies: ratio 1
+    ("floor4", 18, 1, 208),
 ]
+CAM_CENTER = CAM_RANGE // 2
 
 
-def layer_cols(shift):
-    return (320 + (CAM_RANGE >> shift) + 15) // 16
+def layer_cols(num):
+    return (320 + (CAM_RANGE * num) // 16 + 15) // 16
 
 
 SKY_PAL = [(0, 0, 0), (32, 20, 64), (60, 32, 96), (104, 48, 120), (160, 64, 120), (220, 96, 104),
            (255, 150, 90), (255, 206, 120), (255, 240, 190), (70, 50, 100), (110, 80, 130),
            (48, 36, 80), (255, 255, 230), (190, 110, 140)]
-CITY_PAL = [(0, 0, 0), (18, 14, 34), (34, 28, 60), (52, 44, 86), (80, 68, 116), (255, 214, 110),
-            (255, 170, 60), (120, 100, 150), (200, 60, 70), (250, 250, 240), (60, 40, 50),
-            (110, 70, 60), (160, 110, 80), (90, 150, 200), (40, 30, 36)]
-STREET_PAL = [(0, 0, 0), (40, 34, 44), (70, 60, 72), (100, 88, 96), (130, 116, 118),
-              (160, 146, 140), (190, 176, 164), (220, 208, 190), (90, 70, 60), (140, 60, 50),
-              (230, 200, 90), (24, 20, 28), (60, 52, 110), (120, 108, 170)]
+CITY_PAL = [(0, 0, 0), (122, 86, 136), (128, 92, 140), (136, 100, 148), (146, 110, 156), (170, 132, 158),
+            (158, 120, 152), (150, 130, 170), (230, 50, 60), (255, 255, 240), (60, 40, 50),
+            (120, 70, 50), (220, 150, 100), (60, 170, 240), (30, 20, 30)]
+STREET_PAL = [(0, 0, 0), (30, 24, 34), (60, 50, 62), (96, 82, 90), (128, 110, 108),
+              (172, 152, 138), (226, 210, 186), (240, 228, 200), (90, 70, 60), (160, 50, 40),
+              (250, 210, 70), (16, 12, 20), (60, 52, 110), (120, 108, 170)]
 
 
 def dither_band(d, x0, y0, x1, y1, c_top, c_bot):
@@ -432,7 +483,7 @@ def dither_band(d, x0, y0, x1, y1, c_top, c_bot):
 
 
 def build_sky():
-    w, h = layer_cols(2) * 16, 9 * 16
+    w, h = layer_cols(4) * 16, 9 * 16
     img = new_p(w, h, SKY_PAL, 1)
     d = ImageDraw.Draw(img)
     bands = [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7)]
@@ -455,7 +506,7 @@ def build_sky():
 
 
 def build_city():
-    w, h = layer_cols(1) * 16, 10 * 16
+    w, h = layer_cols(8) * 16, 10 * 16
     img = new_p(w, h, CITY_PAL, 0)
     d = ImageDraw.Draw(img)
     rnd = random.Random(98)
@@ -471,18 +522,18 @@ def build_city():
                     d.rectangle([wx, wy, wx + 3, wy + 4], fill=rnd.choice([5, 5, 6, 1]))
         x += bw + rnd.randrange(0, 6)
     # cartel luminoso
-    bx = w // 2 - 60
-    d.rectangle([bx, 40, bx + 120, 70], fill=8, outline=1)
-    d.rectangle([bx + 4, 44, bx + 116, 66], fill=10)
-    for i, c in enumerate("NEO FIGHT"):
-        d.text((bx + 12 + i * 11, 48), c, fill=9)
+    bx = 36                                     # cartel lateral, fuera de la zona de la pelea
+    d.rectangle([bx, 22, bx + 44, 58], fill=8, outline=1)
+    d.rectangle([bx + 3, 25, bx + 41, 55], fill=10)
+    d.ellipse([bx + 10, 28, bx + 34, 52], outline=9, width=3)
+    d.line([(bx + 22, 30), (bx + 22, 50)], fill=9, width=3)
     # baranda y público (de 100 a 136)
     d.rectangle([0, 128, w, 131], fill=7)
     for px in range(0, w, 12):
         d.line([(px, 131), (px, 150)], fill=7, width=2)
     for px in range(4, w, 9):                                              # cabezas y cuerpos
         py = 104 + rnd.randrange(-4, 5)
-        shirt = rnd.choice([8, 13, 11, 12, 3, 9])
+        shirt = rnd.choice([7, 6, 11, 12, 3, 5])
         d.rectangle([px - 4, py + 8, px + 4, 150], fill=shirt, outline=1)
         d.ellipse([px - 4, py, px + 4, py + 9], fill=rnd.choice([12, 11, 12]), outline=1)
         if rnd.random() < 0.3:                                             # brazos arriba
@@ -492,32 +543,45 @@ def build_city():
     return img
 
 
+def floor_screen(sx, sy):
+    """Color del piso en el punto de pantalla (sx, sy) con la cámara centrada.
+    Perspectiva real: el punto de fuga está sobre el centro de la pantalla."""
+    vpx, vpy = 160.0, 40.0
+    if sy < 154:
+        return 6 if sy < 151 else 1                       # cordón
+    z = 1.0 / (sy - vpy)                                    # profundidad
+    wx = (sx - vpx) * z * 120.0                             # coordenada del mundo sobre el piso
+    wz = z * 2400.0
+    gx, gz = math.floor(wx / 28.0), math.floor(wz / 4.0)
+    fx, fz = wx / 28.0 - gx, wz / 4.0 - gz
+    if fx < 0.07 or fz < 0.1:
+        return 11                                           # junta oscura
+    if fx < 0.13 or fz < 0.18:
+        return 6                                            # bisel claro
+    base = 4 if (gx + gz) % 2 == 0 else 5
+    if sy < 172:
+        base -= 1                                           # más oscuro lejos
+    return base
+
+
 def build_street():
-    w, h = layer_cols(0) * 16, 5 * 16
-    img = new_p(w, h, STREET_PAL, 3)
-    d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, w, 7], fill=6)                                      # cordón
-    d.rectangle([0, 7, w, 9], fill=1)
-    # baldosas en perspectiva: filas cada vez más altas hacia abajo
-    ys, y, step = [10], 10, 5
-    while y < h:
-        y += step
-        step += 2
-        ys.append(min(y, h))
-    vpx, vpy = w / 2, -160
-    for i in range(len(ys) - 1):
-        y0, y1 = ys[i], ys[i + 1]
-        dither_band(d, 0, y0, w, y1, 3 if i % 2 else 4, 4 if i % 2 else 5)
-        d.line([(0, y0), (w, y0)], fill=2)
-    for gx in range(-w, 2 * w, 32):                                        # juntas hacia el punto de fuga
-        x_top = vpx + (gx - vpx) * (10 - vpy) / (h - vpy)
-        d.line([(x_top, 10), (gx, h)], fill=2)
+    """Genera las 5 franjas del piso. Cada franja se desplaza a su propio ritmo;
+    con la cámara al centro las cinco arman una única imagen en perspectiva."""
     rnd = random.Random(3)
-    for _ in range(40):                                                    # manchas / papelitos
-        px, py = rnd.randrange(w), rnd.randrange(14, h)
-        d.point([(px, py)], fill=rnd.choice([10, 9, 13, 7]))
-    save_gif(img, "street.gif")
-    return img
+    for name, num, rows, y in LAYERS[2:]:
+        w = layer_cols(num) * 16
+        img = new_p(w, 16, STREET_PAL, 3)
+        px = img.load()
+        off = (CAM_CENTER * num) // 16                      # scroll de la franja con la cámara centrada
+        for u in range(w):
+            sx = u - off
+            for yy in range(16):
+                px[u, yy] = floor_screen(sx, y + yy)
+        for _ in range(w // 12):                            # papelitos
+            u, yy = rnd.randrange(w), rnd.randrange(16)
+            if y + yy > 156:
+                px[u, yy] = rnd.choice([10, 9, 13, 7])
+        save_gif(img, name + ".gif")
 
 
 # --------------------------------------------------------------------------
@@ -527,50 +591,64 @@ def build_street():
 HUD_PAL = [(255, 0, 255), (16, 12, 20), (170, 255, 90), (60, 180, 40), (120, 20, 30),
            (60, 10, 20), (255, 255, 255), (150, 150, 170), (255, 240, 120), (255, 170, 30),
            (170, 60, 10), (230, 40, 40), (80, 80, 100)]
-HUD_BAR_FULL, HUD_BAR_EMPTY = 1, 2
-HUD_P1_PART, HUD_P2_PART = 3, 10               # +k-1 para k = 1..7 px llenos
-HUD_CAP_L, HUD_CAP_R, HUD_WIN_OFF, HUD_WIN_ON = 17, 18, 19, 20
-HUD_DIGITS = 21                                # 10 dígitos x 6 tiles (2x3)
+HUD_BAR_SOLID = 1                              # + estado*2 + fila (F=0, D=1, E=2)
+HUD_BAR_EDGE = 7                               # + (par*7 + m-1)*2 + fila, pares en BAR_PAIRS
+HUD_CAP_L = 7 + 6 * 7 * 2
+HUD_CAP_R, HUD_WIN_OFF, HUD_WIN_ON = HUD_CAP_L + 1, HUD_CAP_L + 2, HUD_CAP_L + 3
+HUD_DIGITS = HUD_CAP_L + 4                     # 10 dígitos x 12 tiles (3x4)
+HUD_MEDAL = HUD_DIGITS + 120                   # apagado +0..3, encendido +4..7 (2x2)
 
 DIGIT_SEGS = {  # segmentos estilo 7 seg: a b c d e f g
     0: "abcdef", 1: "bc", 2: "abged", 3: "abgcd", 4: "fgbc", 5: "afgcd",
     6: "afgedc", 7: "abc", 8: "abcdefg", 9: "abcdfg"}
 
 
-def bar_tile(fill_mask):
+BAR_COL = {"F": (2, 3), "D": (9, 10), "E": (4, 5)}     # (luz, sombra) por estado
+
+
+def bar_tile(states, row):
+    """states: 8 letras F (lleno), D (daño reciente), E (vacío); row 0 arriba, 1 abajo."""
     t = new_p(8, 8, HUD_PAL)
     d = ImageDraw.Draw(t)
     d.rectangle([0, 0, 7, 7], fill=1)
     for x in range(8):
-        on = fill_mask[x]
-        d.line([(x, 1), (x, 3)], fill=2 if on else 4)
-        d.line([(x, 4), (x, 6)], fill=3 if on else 5)
+        light, dark = BAR_COL[states[x]]
+        if row == 0:
+            d.line([(x, 2), (x, 3)], fill=6 if states[x] == "F" else light)
+            d.line([(x, 4), (x, 7)], fill=light)
+        else:
+            d.line([(x, 0), (x, 4)], fill=light if x % 2 or states[x] != "F" else light)
+            d.line([(x, 5), (x, 5)], fill=dark)
     return t
 
 
 def digit_img(n):
-    img = new_p(16, 24, HUD_PAL)
+    img = new_p(24, 32, HUD_PAL, 1)                     # placa oscura propia
     d = ImageDraw.Draw(img)
+    k = 1.5
     seg = {"a": [(3, 1), (12, 1), (10, 4), (5, 4)], "d": [(3, 22), (12, 22), (10, 19), (5, 19)],
            "g": [(4, 11), (11, 11), (12, 12), (11, 13), (4, 13), (3, 12)],
            "f": [(1, 3), (4, 5), (4, 10), (1, 11)], "b": [(14, 3), (11, 5), (11, 10), (14, 11)],
            "e": [(1, 13), (4, 14), (4, 18), (1, 20)], "c": [(14, 13), (11, 14), (11, 18), (14, 20)]}
-    for s in DIGIT_SEGS[n]:
-        pts = seg[s]
-        d.polygon([(x + 1, y + 1) for x, y in pts], fill=1)
-    for s in DIGIT_SEGS[n]:
-        d.polygon(seg[s], fill=9 if s in "edc" else 8, outline=10)
+    tr = lambda pts: [(x * k + 1, y * k + 0.5) for x, y in pts]
+    for s_ in DIGIT_SEGS[n]:
+        d.polygon(tr(seg[s_]), fill=9 if s_ in "edc" else 8, outline=10)
     return img
+
+
+BAR_PAIRS = ["ED", "DF", "EF", "FD", "DE", "FE"]
 
 
 def build_hud():
     tiles = [new_p(8, 8, HUD_PAL)]                                        # 0 vacío
-    tiles.append(bar_tile([1] * 8))                                       # 1 lleno
-    tiles.append(bar_tile([0] * 8))                                       # 2 vacío
-    for k in range(1, 8):                                                 # 3..9 P1: llenos a la derecha
-        tiles.append(bar_tile([0] * (8 - k) + [1] * k))
-    for k in range(1, 8):                                                 # 10..16 P2: llenos a la izquierda
-        tiles.append(bar_tile([1] * k + [0] * (8 - k)))
+    for st in "FDE":                                                      # 1..6 sólidos (estado, fila)
+        for row in (0, 1):
+            tiles.append(bar_tile(st * 8, row))
+    for pair in BAR_PAIRS:                                                # 7.. bordes: m px del primer estado
+        for m in range(1, 8):
+            for row in (0, 1):
+                tiles.append(bar_tile(pair[0] * m + pair[1] * (8 - m), row))
+    assert len(tiles) == HUD_CAP_L
     for side in (0, 1):                                                   # 17, 18 tapas
         t = new_p(8, 8, HUD_PAL)
         d = ImageDraw.Draw(t)
@@ -583,13 +661,102 @@ def build_hud():
         d.ellipse([0, 0, 7, 7], fill=1)
         d.ellipse([1, 1, 6, 6], fill=8 if on else 12)
         tiles.append(t)
-    for n in range(10):                                                   # 21.. dígitos 2x3
+    for n in range(10):                                                   # dígitos 2x3
         tiles.extend(tiles_of(digit_img(n), 8, 8))
+    for on in (0, 1):                                                     # medallones 2x2 de round ganado
+        m = new_p(16, 16, HUD_PAL)
+        d = ImageDraw.Draw(m)
+        d.ellipse([0, 0, 15, 15], fill=1)
+        d.ellipse([1, 1, 14, 14], fill=9 if on else 7)
+        d.ellipse([3, 3, 12, 12], fill=8 if on else 12)
+        if on:
+            d.polygon([(8, 4), (9, 7), (12, 7), (10, 9), (11, 12), (8, 10), (5, 12), (6, 9), (4, 7), (7, 7)], fill=6)
+        tiles.extend(tiles_of(m, 8, 8))
     strip = new_p(8 * len(tiles), 8, HUD_PAL)
     for i, t in enumerate(tiles):
         strip.paste(t, (i * 8, 0))
     save_gif(strip, "hud.gif")
     return len(tiles)
+
+
+
+# --------------------------------------------------------------------------
+# fuente grande para mensajes (ROUND, FIGHT!, K.O.): bloques 5x7 propios
+# --------------------------------------------------------------------------
+
+MSG_PAL = [(255, 0, 255), (16, 8, 16), (255, 255, 240), (255, 236, 90), (255, 170, 30),
+           (230, 70, 20), (120, 20, 20), (60, 10, 20)]
+FONT_CHARS = " ABCDEFGHIKLMNOPRSTUVWXZ0123456789!."
+GLYPHS = {
+    "A": ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+    "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
+    "C": ["01111", "10000", "10000", "10000", "10000", "10000", "01111"],
+    "D": ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
+    "E": ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
+    "F": ["11111", "10000", "10000", "11110", "10000", "10000", "10000"],
+    "G": ["01111", "10000", "10000", "10011", "10001", "10001", "01111"],
+    "H": ["10001", "10001", "10001", "11111", "10001", "10001", "10001"],
+    "I": ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
+    "K": ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
+    "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
+    "M": ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
+    "N": ["10001", "11001", "10101", "10011", "10001", "10001", "10001"],
+    "O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
+    "P": ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
+    "R": ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
+    "S": ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
+    "T": ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
+    "U": ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
+    "V": ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
+    "W": ["10001", "10001", "10001", "10101", "10101", "11011", "10001"],
+    "X": ["10001", "10001", "01010", "00100", "01010", "10001", "10001"],
+    "Z": ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
+    "0": ["01110", "10011", "10101", "10101", "10101", "11001", "01110"],
+    "1": ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
+    "2": ["01110", "10001", "00001", "00010", "00100", "01000", "11111"],
+    "3": ["11110", "00001", "00001", "01110", "00001", "00001", "11110"],
+    "4": ["00010", "00110", "01010", "10010", "11111", "00010", "00010"],
+    "5": ["11111", "10000", "11110", "00001", "00001", "10001", "01110"],
+    "6": ["01110", "10000", "10000", "11110", "10001", "10001", "01110"],
+    "7": ["11111", "00001", "00010", "00100", "01000", "01000", "01000"],
+    "8": ["01110", "10001", "10001", "01110", "10001", "10001", "01110"],
+    "9": ["01110", "10001", "10001", "01111", "00001", "00001", "01110"],
+    "!": ["00100", "00100", "00100", "00100", "00100", "00000", "00100"],
+    ".": ["00000", "00000", "00000", "00000", "00000", "00000", "00100"],
+    " ": ["00000"] * 7,
+}
+
+
+def build_font():
+    n = len(FONT_CHARS)
+    img = new_p(32 * n, 32, MSG_PAL)
+    for gi, ch in enumerate(FONT_CHARS):
+        cell = new_p(32, 32, MSG_PAL)
+        mask = [[0] * 32 for _ in range(32)]
+        for r, row in enumerate(GLYPHS[ch]):
+            for c, bit in enumerate(row):
+                if bit == "1":
+                    for yy in range(4):
+                        for xx in range(4):
+                            mask[2 + r * 4 + yy][5 + c * 4 + xx] = 1
+        px = cell.load()
+        for y in range(32):                     # sombra desplazada
+            for x in range(32):
+                if y >= 2 and x >= 2 and mask[y - 2][x - 2]:
+                    px[x, y] = 7
+        for y in range(32):                     # contorno
+            for x in range(32):
+                if any(0 <= y + dy < 32 and 0 <= x + dx < 32 and mask[y + dy][x + dx]
+                       for dy in (-1, 0, 1) for dx in (-1, 0, 1)) and not mask[y][x]:
+                    px[x, y] = 1
+        for y in range(32):                     # relleno con degradé vertical
+            for x in range(32):
+                if mask[y][x]:
+                    t = (y - 2) / 28.0
+                    px[x, y] = 2 if t < 0.12 else 3 if t < 0.4 else 4 if t < 0.7 else 5 if t < 0.9 else 6
+        img.paste(cell, (gi * 32, 0))
+    save_gif(img, "font.gif")
+    return n
 
 
 # --------------------------------------------------------------------------
@@ -607,13 +774,22 @@ def main():
     save_gif(fsheet, "fighter.gif")
     tile_fx = tile_fighter + fused
     fx_used = build_fx(tile_fx)
-    tile_sky = tile_fx + fx_used
+    tile_proj = tile_fx + fx_used
+    proj_used = build_proj()
+    tile_sky = tile_proj + proj_used
     sky = build_sky()
     tile_city = tile_sky + (sky.size[0] // 16) * (sky.size[1] // 16)
     city = build_city()
     tile_street = tile_city + (city.size[0] // 16) * (city.size[1] // 16)
-    street = build_street()
-    tile_end = tile_street + (street.size[0] // 16) * (street.size[1] // 16)
+    build_street()
+    floor_tiles = {}
+    t = tile_street
+    for name, num, rows, y in LAYERS[2:]:
+        floor_tiles[name] = t
+        t += layer_cols(num) * rows
+    tile_font = t
+    font_n = build_font()
+    tile_end = tile_font + font_n * 4
     hud_count = build_hud()
 
     # ---------------------------------------------------------------- frames
@@ -636,27 +812,31 @@ def main():
                 if limb.startswith("toe"):
                     hit = rel(box_around([j[limb], j["an" + side], j["kn" + side]], 5))
                 else:
-                    hit = rel(box_around([j[limb], j["el" + side]], 6))
+                    hit = rel(box_around([j[limb], j["el" + side], j["sh" + side]], 6))
             frame_rows.append((pose_index[pose], dur, flags, hit, up, lo))
         anim_rows.append((name, first, len(seq), loop))
 
     h = []
     h.append("/* Generado por tools/make_assets.py: no editar a mano. */\n")
     h.append("#ifndef GEN_ASSETS_H\n#define GEN_ASSETS_H\n#include <ngdevkit/types.h>\n\n")
-    h.append("#define TILE_FIGHTER %d\n#define TILE_FX %d\n#define TILE_SKY %d\n#define TILE_CITY %d\n#define TILE_STREET %d\n#define TILE_END %d\n\n"
-             % (tile_fighter, tile_fx, tile_sky, tile_city, tile_street, tile_end))
+    h.append("#define TILE_FIGHTER %d\n#define TILE_FX %d\n#define TILE_PROJ %d\n#define TILE_SKY %d\n#define TILE_CITY %d\n#define TILE_STREET %d\n#define TILE_FONT %d\n#define TILE_END %d\n\n"
+             % (tile_fighter, tile_fx, tile_proj, tile_sky, tile_city, tile_street, tile_font, tile_end))
+    h.append("/* fuente de mensajes: glifo i ocupa 2x2 tiles; fila de abajo a FONT_GLYPHS*2 */\n#define FONT_GLYPHS %d\nextern const u8 font_map[96];\n\n" % font_n)
     h.append("/* efectos: tiles de 16x16 en fx.gif (2 filas de %d) */\n" % ((32 * 7 + 32) // 16))
     h.append("#define FX_ROW %d\n#define FX_FIREBALL 0\n#define FX_SPARK 6\n#define FX_SHADOW 12\n#define FX_BLOCK 14\n\n" % ((32 * 7 + 32) // 16))
     h.append("#define FIGHTER_PX_W %d\n#define FIGHTER_PX_H %d\n#define FIGHTER_COLS %d\n#define FIGHTER_ROWS %d\n#define FIGHTER_AX %d\n#define FIGHTER_AY %d\n\n"
              % (FW, FH, FCOLS, FROWS, AX, AY))
     h.append("#define CAM_RANGE %d\n#define NUM_LAYERS %d\n" % (CAM_RANGE, len(LAYERS)))
-    for i, (n, sh, ht, y) in enumerate(LAYERS):
-        h.append("#define LAYER_%s_COLS %d\n#define LAYER_%s_ROWS %d\n#define LAYER_%s_SHIFT %d\n#define LAYER_%s_Y %d\n"
-                 % (n.upper(), layer_cols(sh), n.upper(), ht, n.upper(), sh, n.upper(), y))
-    h.append("\n#define HUD_TILES %d\n#define HUD_BAR_FULL %d\n#define HUD_BAR_EMPTY %d\n#define HUD_P1_PART %d\n#define HUD_P2_PART %d\n"
-             "#define HUD_CAP_L %d\n#define HUD_CAP_R %d\n#define HUD_WIN_OFF %d\n#define HUD_WIN_ON %d\n#define HUD_DIGITS %d\n\n"
-             % (hud_count, HUD_BAR_FULL, HUD_BAR_EMPTY, HUD_P1_PART, HUD_P2_PART, HUD_CAP_L, HUD_CAP_R,
-                HUD_WIN_OFF, HUD_WIN_ON, HUD_DIGITS))
+    tbase = {"sky": tile_sky, "city": tile_city}
+    tbase.update(floor_tiles)
+    h.append("/* capas: tile base, columnas, filas, ratio (dieciseisavos de la cámara), y */\n#define LAYER_TABLE \\\n")
+    for n, num, ht, y in LAYERS:
+        h.append("    {%d, %d, %d, %d, %d}, \\\n" % (tbase[n], layer_cols(num), ht, num, y))
+    h.append("\n#define STAGE_W %d\n" % (320 + CAM_RANGE))
+    h.append("\n#define HUD_TILES %d\n#define HUD_BAR_SOLID %d\n#define HUD_BAR_EDGE %d\n"
+             "/* pares de borde: ED DF EF FD DE FE */\n"
+             "#define HUD_CAP_L %d\n#define HUD_CAP_R %d\n#define HUD_WIN_OFF %d\n#define HUD_WIN_ON %d\n#define HUD_DIGITS %d\n#define HUD_MEDAL %d\n\n"
+             % (hud_count, HUD_BAR_SOLID, HUD_BAR_EDGE, HUD_CAP_L, HUD_CAP_R, HUD_WIN_OFF, HUD_WIN_ON, HUD_DIGITS, HUD_MEDAL))
     h.append("#define FF_ACTIVE %d\n#define FF_LOW %d\n#define FF_OVERHEAD %d\n#define FF_SPAWN %d\n\n" % (F_ACTIVE, F_LOW, F_OVERHEAD, F_SPAWN))
     h.append("enum {\n" + "".join("    ANIM_%s,\n" % a[0] for a in ANIMS) + "    ANIM_COUNT\n};\n\n")
     h.append("typedef struct { s8 x, y, w, h; } box_t;\n")
@@ -664,13 +844,13 @@ def main():
              "    box_t hit;      /* w == 0: sin hitbox */\n    box_t hurt_hi;\n    box_t hurt_lo;\n} frame_t;\n")
     h.append("typedef struct { u16 first; u8 count; u8 loop; } anim_t;\n\n")
     h.append("extern const u16 fighter_tmaps[][%d];\nextern const frame_t fighter_frames[];\nextern const anim_t fighter_anims[];\n" % (FCOLS * FROWS))
-    h.append("extern const u16 pal_fighter_p1[16], pal_fighter_p2[16], pal_fx[16], pal_sky[16], pal_city[16], pal_street[16], pal_hud[16];\n")
+    h.append("extern const u16 pal_fighter_p1[16], pal_fighter_p2[16], pal_fx[16], pal_proj[16], pal_sky[16], pal_city[16], pal_street[16], pal_hud[16], pal_msg[16];\n")
     h.append("\n#endif\n")
     open(os.path.join(GEN, "assets.h"), "w").write("".join(h))
 
     c = ["/* Generado por tools/make_assets.py: no editar a mano. */\n#include \"assets.h\"\n\n"]
-    for name, pal in (("pal_fighter_p1", FIGHTER_PAL), ("pal_fighter_p2", FIGHTER_PAL_P2), ("pal_fx", FX_PAL),
-                      ("pal_sky", SKY_PAL), ("pal_city", CITY_PAL), ("pal_street", STREET_PAL), ("pal_hud", HUD_PAL)):
+    for name, pal in (("pal_fighter_p1", FIGHTER_PAL), ("pal_fighter_p2", FIGHTER_PAL_P2), ("pal_fx", FX_PAL), ("pal_proj", PROJ_PAL),
+                      ("pal_sky", SKY_PAL), ("pal_city", CITY_PAL), ("pal_street", STREET_PAL), ("pal_hud", HUD_PAL), ("pal_msg", MSG_PAL)):
         c.append(c_pal(name, pal))
     c.append("\nconst u16 fighter_tmaps[][%d] = {\n" % (FCOLS * FROWS))
     for t in tmaps:
@@ -683,6 +863,8 @@ def main():
     for name, first, count, loop in anim_rows:
         c.append("    {%d, %d, %d},  /* %s */\n" % (first, count, loop, name))
     c.append("};\n")
+    fm = [FONT_CHARS.index(chr(i)) if chr(i) in FONT_CHARS else 0 for i in range(32, 128)]
+    c.append("\nconst u8 font_map[96] = {" + ", ".join(str(v) for v in fm) + "};\n")
     open(os.path.join(GEN, "assets.c"), "w").write("".join(c))
 
     import json
@@ -693,9 +875,8 @@ def main():
                "idle_frames": len(ANIMS[0][2]), "walk_frames": len(ANIMS[1][2])}
     open(os.path.join(ASSETS, "metrics.json"), "w").write(json.dumps(metrics, indent=1))
 
-    print("tiles: fighter %d (+relleno=%d), fx %d, sky %d, city %d, street %d, fin %d; hud %d; poses %d, frames %d"
-          % (len(frames), fused, fx_used, tile_city - tile_sky, tile_street - tile_city, tile_end - tile_street,
-             tile_end, hud_count, len(tmaps), len(frame_rows)))
+    print("tiles: fighter %d (+relleno=%d), fx %d, fin %d; hud %d; poses %d, frames %d"
+          % (len(frames), fused, fx_used, tile_end, hud_count, len(tmaps), len(frame_rows)))
 
 
 if __name__ == "__main__":

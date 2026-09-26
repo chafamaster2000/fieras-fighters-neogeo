@@ -4,7 +4,7 @@
 #include "fighter.h"
 
 typedef struct {
-    u8 active, owner, frame, timer;
+    u8 active, owner, frame, timer;    // active: 1 en vuelo, 2 explotando
     s8 dir;
     s32 x;
     s16 y;                 // relativo al piso, negativo = arriba
@@ -15,6 +15,8 @@ extern proj_t projs[2];
 void fx_init(void);
 void fx_spawn_projectile(const fighter_t *f);
 void fx_spark(s16 x, s16 y, u8 blocked);
+void fx_explode(proj_t *p, s16 x, s16 y);
 void fx_update(void);                         // mueve proyectiles y chispas
+void fx_tick_sparks(void);                    // solo chispas: también corre durante el hitstop
 void fx_draw(s16 cam_x, const fighter_t *p1, const fighter_t *p2);
 #endif

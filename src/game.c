@@ -16,7 +16,7 @@ volatile game_t g;
 
 #define USER_MODE_GAME 2
 #define ROUND_TIME     60
-#define PUSH_W         36
+#define PUSH_W         50
 #define EDGE           20
 #define DEMO_FRAMES    (60 * 40)
 
@@ -27,7 +27,7 @@ static u8 shake_side;
 static u16 scroll[3];
 static s16 cam_drawn;
 
-static const attack_t fireball_atk = {ANIM_FIREBALL, 12, 18, 14, 8, 3, SND_HEAVY};
+static const attack_t fireball_atk = {ANIM_FIREBALL, 12, 18, 14, 14, 3, SND_HEAVY};
 
 static void sync_obs(void) {
     for (u8 i = 0; i < 2; i++) {
@@ -129,7 +129,7 @@ static void check_melee(fighter_t *a, fighter_t *d) {
 }
 
 static void check_projectiles(void) {
-    if (projs[0].active && projs[1].active) {
+    if (projs[0].active == 1 && projs[1].active == 1) {
         s16 dx = PX(projs[0].x - projs[1].x);
         if (dx > -24 && dx < 24) {
             fx_spark(PX(projs[0].x) - dx / 2, projs[0].y, 1);
@@ -139,7 +139,7 @@ static void check_projectiles(void) {
     }
     for (u8 o = 0; o < 2; o++) {
         proj_t *p = &projs[o];
-        if (!p->active) continue;
+        if (p->active != 1) continue;
         fighter_t *d = &fs[1 - o];
         if (d->state == FS_KO || d->state == FS_KNOCKDOWN) continue;
         s16 px = PX(p->x);
@@ -149,8 +149,10 @@ static void check_projectiles(void) {
             s16 bx0, by0, bx1, by1;
             fighter_world_box(d, hurt[i], &bx0, &by0, &bx1, &by1);
             if (overlap(px - 12, p->y - 12, px + 12, p->y + 12, bx0, by0, bx1, by1)) {
-                p->active = 0;
-                resolve(&fs[o], d, &fireball_atk, 0, px, p->y);
+                // explosión azul grande sobre el cuerpo del que recibe
+                s16 ex = PX(d->x) - d->facing * 6, ey = PX(d->y) - 66;
+                resolve(&fs[o], d, &fireball_atk, 0, ex, ey);
+                fx_explode(p, ex, ey);
                 break;
             }
         }
@@ -204,6 +206,7 @@ static void read_inputs(u8 control, u8 demo) {
 
 static void step(u8 control, u8 demo) {
     read_inputs(control, demo);
+    fx_tick_sparks();
     if (hitstop) {
         hitstop--;
         return;
@@ -233,6 +236,8 @@ static void setup_video(void) {
     hw_load_palette(PAL_P1, pal_fighter_p1);
     hw_load_palette(PAL_P2, pal_fighter_p2);
     hw_load_palette(PAL_FX, pal_fx);
+    hw_load_palette(PAL_MSG, pal_msg);
+    hw_load_palette(PAL_PROJ, pal_proj);
     MMAP_PALBANK1[0] = 0x8000;
     MMAP_PALBANK1[1] = 0x7fff;
     MMAP_PALBANK1[2] = 0x0333;
@@ -314,7 +319,7 @@ u8 game_match(u8 demo, u8 p1_human, u8 p2_human) {
         else if (!fs[0].hp && fs[1].hp) win = &fs[1];
         else if (!g.timer && fs[0].hp != fs[1].hp) win = fs[0].hp > fs[1].hp ? &fs[0] : &fs[1];
         g.rstate = g.timer ? RS_KO : RS_TIMEUP;
-        hud_message(g.timer ? "K.O." : "TIME OVER");
+        hud_message(g.timer ? "K.O." : "TIME");
         if (hold_frames(120, 0, demo)) return 1;
         if (win) {
             win->wins++;
@@ -328,7 +333,7 @@ u8 game_match(u8 demo, u8 p1_human, u8 p2_human) {
         g.round++;
     }
     g.mode = MODE_MATCH_END;
-    hud_message(fs[0].wins > fs[1].wins ? "BLAZE WINS MATCH" : "FROST WINS MATCH");
+    hud_message(fs[0].wins > fs[1].wins ? "BLAZE WINS!" : "FROST WINS!");
     hold_frames(150, 0, 0);
     return 0;
 }

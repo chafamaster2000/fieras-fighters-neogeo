@@ -5,9 +5,9 @@
 
 #define WALK_F_V    FP(2) + 0x40       // 2.25 px/frame
 #define WALK_B_V    FP(1) + 0x80       // 1.5 px/frame
-#define JUMP_V      FP(8)
+#define JUMP_V      FP(7)              // vértice ≈ 60 px: el cuerpo queda bajo el HUD
 #define JUMP_H      FP(2) + 0x80
-#define GRAVITY     0x66               // 0.4 px/frame^2
+#define GRAVITY     0x60               // 0.375 px/frame^2, unos 37 frames en el aire
 #define KO_V        FP(5)
 
 // Datos de golpes (inspirados en frames de KOF: jab rápido, patada más lenta)

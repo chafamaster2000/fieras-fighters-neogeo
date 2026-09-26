@@ -11,13 +11,12 @@
 #define ADDR_FIXMAP 0x7000
 
 // Índices de sprite (SCB). Mayor índice = se dibuja encima.
-#define SPR_SKY      1    // 21 columnas
-#define SPR_CITY     22   // 21 columnas
-#define SPR_STREET   43   // 21 columnas
-#define SPR_SHADOW   66   // 2 luchadores x 2 columnas
-#define SPR_FIGHTER  72   // 2 luchadores x 7 columnas (P2 72.., P1 79..)
-#define SPR_PROJ     90   // 2 proyectiles x 2 columnas
-#define SPR_SPARK    96   // 2 chispas x 2 columnas
+#define SPR_STAGE    1    // 7 capas x 21 columnas: 1..147
+#define SPR_SHADOW   150  // 2 luchadores x 2 columnas
+#define SPR_FIGHTER  156  // 2 luchadores x 7 columnas (P2 156.., P1 163..)
+#define SPR_PROJ     172  // 2 proyectiles x 3 columnas
+#define SPR_SPARK    178  // 2 chispas x 2 columnas
+#define SPR_MSG      190  // mensajes grandes: hasta 12 letras x 2 columnas
 
 // Paletas
 #define PAL_TEXT     0
@@ -28,6 +27,8 @@
 #define PAL_P1       19
 #define PAL_P2       20
 #define PAL_FX       21
+#define PAL_MSG      22
+#define PAL_PROJ     23
 
 static inline u16 scb3(s16 y, u8 height) {
     return (u16)((((496 - y) & 0x1ff) << 7) | (height & 0x3f));

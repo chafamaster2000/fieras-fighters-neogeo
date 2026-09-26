@@ -7,7 +7,6 @@
 #define FP(px)        ((s32)(px) << 8)
 #define PX(fp)        ((s16)((fp) >> 8))
 #define FLOOR_Y       200               // fila de pantalla del piso
-#define STAGE_W       (LAYER_STREET_COLS * 16)
 #define MAX_HP        100
 
 // Bits del joystick tal como los da el BIOS
