@@ -1,0 +1,69 @@
+# Auto-generated config file for ngdevkit-examples
+# This file only holds configuration for all the build rules
+# It expects ngdevkit binary to be in your PATH
+# Re-generate with ./configure
+
+# ngdevkit dependencies
+PKGCONFIG=@pkgconfig@
+PYTHON=@python@
+ZIP=@zip@
+
+# ngdevkit toolchain
+M68KAR=@ngar@
+M68KAS=@ngas@
+M68KGCC=@nggcc@
+M68KGXX=@nggxx@
+M68KLD=@ngld@
+M68KOBJCOPY=@ngobjcopy@
+M68KRANLIB=@ngranlib@
+Z80SDAR=@ngsdar@
+Z80SDAS=@ngsdas@
+Z80SDCC=@ngsdcc@
+Z80SDLD=@ngsdld@
+Z80SDOBJCOPY=@ngsdobjcopy@
+Z80SDRANLIB=@ngsdranlib@
+
+# ngdevkit tools
+PALTOOL=@PALTOOL@
+TILETOOL=@TILETOOL@
+ADPCMTOOL=@ADPCMTOOL@
+VROMTOOL=@VROMTOOL@
+FURTOOL=@FURTOOL@
+NSSTOOL=@NSSTOOL@
+SOUNDTOOL=@SOUNDTOOL@
+ROMTOOL=@ROMTOOL@
+
+# ngdevkit build flags
+NGCFLAGS=`$(PKGCONFIG) --cflags ngdevkit`
+NGLDFLAGS=`$(PKGCONFIG) --libs ngdevkit`
+NGLIBDIR=`$(PKGCONFIG) --variable=libdir ngdevkit`
+NGZ80INCLUDEDIR=`$(PKGCONFIG) --variable=z80includedir ngdevkit`
+NGZ80LIBDIR=`$(PKGCONFIG) --variable=z80libdir ngdevkit`
+# this variable must be resolved here as it is used as a base
+# directory for dependencies (nullsound, nullbios)
+NGSHAREDIR=$(shell $(PKGCONFIG) --variable=sharedir ngdevkit)
+
+# ROM files to use
+AES_BIOS=@AES_BIOS@
+MVS_BIOS=@MVS_BIOS@
+
+# additional dependencies
+CONVERT=@convert@
+
+# any additional config or dependencies can be added below
+SOX=@sox@
+RSYNC=@rsync@
+GNGEO=@gngeo@
+
+# GnGeo config
+GNGEO_DATA=@GNGEO_DATA@
+GNGEO_GLSL=@GNGEO_GLSL@
+GNGEO_SHADER_PATH=@GNGEO_SHADER_PATH@
+GLSL_SHADER_PATH=@GLSL_SHADER_PATH@
+SHADER_PATH=@SHADER_PATH@
+SHADER=@SHADER@
+
+# OS-specific
+ENABLE_MSYS2=@ENABLE_MSYS2@
+ENABLE_MINGW=@ENABLE_MINGW@
+GNGEO_INSTALL_PATH=@GNGEO_INSTALL_PATH@

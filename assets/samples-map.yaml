@@ -1,0 +1,6 @@
+- adpcm_a: {name: whoosh, uri: "file://assets/sfx/whoosh.wav"}
+- adpcm_a: {name: hit, uri: "file://assets/sfx/hit.wav"}
+- adpcm_a: {name: heavy, uri: "file://assets/sfx/heavy.wav"}
+- adpcm_a: {name: block, uri: "file://assets/sfx/block.wav"}
+- adpcm_a: {name: fireball, uri: "file://assets/sfx/fireball.wav"}
+- adpcm_a: {name: ko, uri: "file://assets/sfx/ko.wav"}

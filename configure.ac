@@ -1,0 +1,299 @@
+# Copyright (c) 2019-2025 Damien Ciabrini
+# This file is part of ngdevkit
+#
+# ngdevkit is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# ngdevkit is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with ngdevkit.  If not, see <http://www.gnu.org/licenses/>.
+
+AC_INIT([neogeo-fighter], [0.1])
+
+# This set of examples is meant to be built against this ngdevkit version
+NGDEVKIT_MIN_VERSION=0.5
+
+dnl
+dnl MinGW-specific options
+dnl
+AC_ARG_ENABLE([mingw],
+	      AS_HELP_STRING([--enable-mingw], [Look for a Win10-native version of gngeo available in PATH]),
+	      AS_IF([test "x$enable_mingw" = xyes], [ENABLE_MINGW="yes"], [ENABLE_MINGW="no"]),
+              [ENABLE_MINGW="no"])
+AC_SUBST([ENABLE_MINGW])
+AC_ARG_ENABLE([msys2],
+              AS_HELP_STRING([--enable-msys2], [Look for a Win10-native version of gngeo available in PATH]),
+              AS_IF([test "x$enable_msys2" = xyes], [ENABLE_MSYS2="yes"], [ENABLE_MSYS2="no"]),
+              [ENABLE_MSYS2=""])
+AC_SUBST([ENABLE_MSYS2])
+
+AC_ARG_WITH([aes-bios],
+            AS_HELP_STRING([--with-aes-bios=path], [Absolute path to the AES bios file to use]))
+AC_ARG_WITH([mvs-bios],
+            AS_HELP_STRING([--with-mvs-bios=path], [Absolute path to the MVS bios file to use]))
+
+# ngdevkit-toolkit and ngdevkit can be installed in
+# two different location, so search for executable
+# in two steps
+
+# ngdevkit-toolkit common tools
+AC_PATH_PROG([nggcc], [m68k-neogeo-elf-gcc])
+AC_PATH_PROG([nggxx], [m68k-neogeo-elf-g++])
+AC_PATH_PROG([ngas], [m68k-neogeo-elf-as])
+AC_PATH_PROG([ngld], [m68k-neogeo-elf-ld])
+AC_PATH_PROG([ngar], [m68k-neogeo-elf-ar])
+AC_PATH_PROG([ngranlib], [m68k-neogeo-elf-ranlib])
+AC_PATH_PROG([ngobjcopy], [m68k-neogeo-elf-objcopy])
+AC_PATH_PROG([ngsdcc], [z80-neogeo-ihx-sdcc])
+AC_PATH_PROG([ngsdas], [z80-neogeo-ihx-sdasz80])
+AC_PATH_PROG([ngsdld], [z80-neogeo-ihx-sdldz80])
+AC_PATH_PROG([ngsdar], [z80-neogeo-ihx-sdar])
+AC_PATH_PROG([ngsdranlib], [z80-neogeo-ihx-sdranlib])
+AC_PATH_PROG([ngsdobjcopy], [z80-neogeo-ihx-sdobjcopy])
+
+# ngdevkit location and common flags
+PKG_CHECK_MODULES([ngdevkit],[ngdevkit])
+
+AC_MSG_CHECKING([whether detected ngdevkit version >= ${NGDEVKIT_MIN_VERSION}])
+[ngdevkitver=`pkg-config --modversion ngdevkit`]
+highestver=`(echo ${ngdevkitver}; echo ${NGDEVKIT_MIN_VERSION}) | sort | tail -1`
+if test ${highestver} = ${ngdevkitver} ; then
+  AC_MSG_RESULT([yes])
+else
+  AC_MSG_ERROR([ngdevkit version too old (detected: ${ngdevkitver}, required: ${NGDEVKIT_MIN_VERSION})])
+fi
+
+AC_SUBST([ngdkbindir],`pkg-config --variable=bindir ngdevkit`)
+AC_SUBST([ngdksharedir],`pkg-config --variable=sharedir ngdevkit`)
+AC_SUBST([ngdkz80includedir],`pkg-config --variable=z80includedir ngdevkit`)
+AC_SUBST([ngdkz80libdir],`pkg-config --variable=z80libdir ngdevkit`)
+
+# additional dependencies
+AC_ARG_WITH([python],
+            AS_HELP_STRING([--with-python=path], [Absolute path to the python 3 binary]))
+
+if test -n "$with_python"; then
+  python="$with_python"
+  AC_SUBST([python])
+else
+  AC_PATH_PROGS([python], [python3 python], [no])
+  if test x"$python" = x"no"; then
+    AC_MSG_ERROR([no python detected.])
+  fi
+fi
+
+dnl AC_PATH_PROGS([python], [python3 python], [no])
+dnl if test x"$python" = x"no"; then
+dnl   AC_MSG_ERROR([no python detected.])
+dnl fi
+AC_MSG_CHECKING([whether detected python is at least python3])
+[pyver=`$python -c 'import sys; print(sys.version_info[0])'`]
+if test $pyver -ge 3; then
+  AC_MSG_RESULT([yes])
+else
+  AC_MSG_ERROR([python major version too old (detected: $pyver, required: 3)])
+fi
+
+dnl Configure how to run ngdevkit's python tools
+AC_MSG_CHECKING([whether ngdevkit's tools are in path])
+[testpaltool=`which paltool.py`]
+if test $? -eq 0; then
+  AC_MSG_RESULT([yes])
+else
+  AC_MSG_ERROR([paltool.py not found in PATH])
+fi
+
+AC_MSG_CHECKING([how to call ngdevkit's python tools])
+ngdktools_prefix=`dirname ${testpaltool}`
+if test -n "$with_python"; then
+   dnl run tools with a custom python environment
+   dnl we can't rely on ngdkbindir to locate tools' real path
+   dnl because brew specifically install them in a different libexecdir,
+   dnl and create wrappers to those scripts. If we detect such
+   dnl wrappers, rely on pkg-config to find the real path
+   if head -1 $testpaltool | grep -q -v python; then
+     ngdktools_prefix="$ngdkbindir"
+   else
+     ngdktools_prefix="$python $ngdktools_prefix"
+   fi
+   AC_MSG_RESULT([run with $python])
+else
+   AC_MSG_RESULT([directly])
+fi
+PALTOOL="$ngdktools_prefix/paltool.py"
+TILETOOL="$ngdktools_prefix/tiletool.py"
+ADPCMTOOL="$ngdktools_prefix/adpcmtool.py"
+VROMTOOL="$ngdktools_prefix/vromtool.py"
+FURTOOL="$ngdktools_prefix/furtool.py"
+NSSTOOL="$ngdktools_prefix/nsstool.py"
+SOUNDTOOL="$ngdktools_prefix/soundtool.py"
+ROMTOOL="$ngdktools_prefix/romtool.py"
+AC_SUBST([PALTOOL])
+AC_SUBST([TILETOOL])
+AC_SUBST([ADPCMTOOL])
+AC_SUBST([VROMTOOL])
+AC_SUBST([FURTOOL])
+AC_SUBST([NSSTOOL])
+AC_SUBST([SOUNDTOOL])
+AC_SUBST([ROMTOOL])
+
+AC_MSG_CHECKING([AES BIOS file to use for running examples])
+if test -n "$with_aes_bios"; then
+   AES_BIOS="$with_aes_bios"
+else
+   AES_BIOS="\$(NGSHAREDIR)/aes.zip"
+fi
+AC_SUBST([AES_BIOS])
+AC_MSG_RESULT([$AES_BIOS])
+AC_MSG_CHECKING([MVS BIOS file to use for running examples])
+if test -n "$with_mvs_bios"; then
+   MVS_BIOS="$with_mvs_bios"
+else
+   MVS_BIOS="\$(NGSHAREDIR)/neogeo.zip"
+fi
+AC_SUBST([MVS_BIOS])
+AC_MSG_RESULT([$MVS_BIOS])
+
+
+dnl External tools for the examples
+AC_PATH_PROGS([make], [gmake make], [no])
+AS_IF([test x"${make}" = x"no"],[AC_MSG_ERROR([Please install make before configuring.])])
+AC_MSG_CHECKING([whether ${make} is at least GNU Make 4])
+makever=`${make} --version | sed -n 's/GNU Make \(.*\)/\1/p'`
+if sh -c "test '$makever' '>' 4 -o '$makever' = 4"; then
+  AC_MSG_RESULT([yes])
+else
+  AC_MSG_ERROR([make version too old for building these examples (detected: $makever, required: 4)])
+fi
+
+AC_PATH_PROG([pkgconfig], [pkg-config])
+AC_PATH_PROG([zip], [zip])
+AC_PATH_PROGS([convert], [magick convert])
+AC_PATH_PROG([sox], [sox])
+AC_PATH_PROG([rsync], [rsync])
+
+if test x"$ENABLE_MINGW" = x"yes"; then
+gngeo_name=ngdevkit-gngeo.exe
+else
+gngeo_name=ngdevkit-gngeo
+fi
+
+AC_PATH_PROG([gngeo], [ngdevkit-gngeo])
+# escape potential spaces from path
+gngeo=$(echo "$gngeo" | sed 's/ /\\ /g')
+
+if env | grep -wq MSYSTEM && test x"$ENABLE_MSYS2" = x"" ; then
+  ENABLE_MSYS2=yes
+fi
+if test x"$ENABLE_MINGW" = x"yes"; then
+  GNGEO_ABS_PREFIX="`eval dirname ${gngeo}`/"
+  GNGEO_PRE="cd \"$GNGEO_ABS_PREFIX\" &&"
+  GNGEO_POST="; cat gngeo_log.txt"
+elif test x"$ENABLE_MSYS2" = x"yes"; then
+  GNGEO_ABS_PREFIX=""
+  GNGEO_PRE=""
+  GNGEO_POST="; cat gngeo_log.txt"
+else
+  GNGEO_ABS_PREFIX=""
+  GNGEO_PRE=""
+  GNGEO_POST=""
+fi
+
+if test x"$gngeo" != x""; then
+  if test x"$ENABLE_MINGW" = x"yes"; then
+    AC_MSG_CHECKING([ngdevkit-gngeo install path])
+    gngeo_install_path="`eval dirname ${gngeo}`"
+    if eval test -d \"${gngeo_install_path}\"; then
+      AC_MSG_RESULT([$gngeo_install_path])
+      GNGEO_INSTALL_PATH=$(echo "$gngeo_install_path" | sed 's/ /\\ /g')
+    else
+      AC_MSG_ERROR([not found])
+    fi
+    AC_SUBST([GNGEO_INSTALL_PATH])
+  fi
+
+  AC_MSG_CHECKING([ngdevkit-gngeo data file])
+  gngeo_data=`(eval $GNGEO_PRE $gngeo ""  forcefail $GNGEO_POST) | sed -ne 's/^DATAFILE = \(.*\)$/\1/p' | head -1`
+  # MSYS2: gngeo logs the location of its data file with Windows paths, we want the Unix notation
+  if test x"$ENABLE_MSYS2" = x"yes"; then
+    gngeo_data=`cygpath -u $gngeo_data`
+  fi
+  if test -n "$gngeo_data" && test -f "${GNGEO_ABS_PREFIX}$gngeo_data"; then
+    AC_MSG_RESULT([$gngeo_data])
+    GNGEO_DATA=$gngeo_data
+  else
+    AC_MSG_ERROR([not found])
+  fi
+  AC_SUBST([GNGEO_DATA])
+
+  AC_MSG_CHECKING([whether ngdevkit-gngeo is built with GLSL shader blitter])
+  (eval $GNGEO_PRE $gngeo -b help $GNGEO_POST) | grep -q -w '^glsl'
+  if test $? = 0; then
+    AC_MSG_RESULT([yes])
+    GNGEO_GLSL=yes
+  else
+    GNGEO_GLSL=no
+    AC_MSG_RESULT([no])
+  fi
+fi
+AC_SUBST([GNGEO_GLSL])
+
+if test x"$GNGEO_GLSL" = x"yes"; then
+AC_SUBST([GNGEO_SHADER_PATH])
+
+if test x"$GNGEO_GLSL" = x"yes"; then
+  AC_MSG_CHECKING([ngdevkit-gngeo GLSL shader path])
+  gngeo_shader_path=`dirname $GNGEO_DATA`
+  if test x"$ENABLE_MSYS2" = x"yes"; then
+    gngeo_shader_path=`cygpath -w "$gngeo_shader_path"`
+  fi
+
+  dnl MinGW generates self-contained builds, so all paths are relative
+  if test -n "$gngeo_shader_path" && test -d "${GNGEO_ABS_PREFIX}$gngeo_shader_path"; then
+    AC_MSG_RESULT([$gngeo_shader_path])
+    GNGEO_SHADER_PATH=$gngeo_shader_path
+  else
+    AC_MSG_RESULT([not found])
+  fi
+
+  AC_MSG_CHECKING([whether the GLSL shaders directory is available])
+    if test -d "$PWD/shaders"; then
+      AC_MSG_RESULT([$PWD/shaders])
+      GLSL_SHADER_PATH=$PWD/shaders
+    else
+      AC_MSG_RESULT([not found. git submodule not checked out])
+    fi
+  fi
+fi
+AC_SUBST([GNGEO_SHADER_PATH])
+AC_SUBST([GLSL_SHADER_PATH])
+
+AC_MSG_CHECKING([which default shader to use in ngdevkit-gngeo])
+if test -n "$GLSL_SHADER_PATH" && test -f "$GLSL_SHADER_PATH/qcrt-flat.glslp"; then
+  SHADER_PATH=$GLSL_SHADER_PATH
+  SHADER=qcrt-flat.glslp
+else
+  SHADER_PATH=$GNGEO_SHADER_PATH
+  SHADER=noop.glslp
+fi
+# MSYS2: gngeo can only parse native Windows paths
+if test x"$ENABLE_MSYS2" = x"yes"; then
+  SHADER_PATH=`cygpath -w $SHADER_PATH`
+    AC_MSG_RESULT([$SHADER_PATH\\$SHADER])
+else
+  AC_MSG_RESULT([$SHADER_PATH/$SHADER])
+fi
+AC_SUBST([SHADER_PATH])
+AC_SUBST([SHADER])
+
+
+AC_CONFIG_FILES([
+ config.mk
+])
+AC_OUTPUT

@@ -1,0 +1,21 @@
+# build (generado por ./configure y make)
+build/
+config.mk
+configure
+config.status
+config.log
+autom4te.cache/
+aclocal.m4
+
+# config local de MAME al jugar con make mame
+cfg/
+nvram/
+memcard/
+snap/
+
+# poses procedurales exportadas por tools/make_assets.py
+art/tmp-procedural/
+
+__pycache__/
+*.pyc
+.DS_Store

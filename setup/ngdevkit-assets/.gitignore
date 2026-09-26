@@ -1,0 +1,11 @@
+# Todo lo que no es fuente se genera al compilar
+*
+!.gitignore
+!Makefile
+!base-sound-driver.s
+!build-srom.py
+!eye-catcher.s
+!gfx/
+!gfx/*
+!music/
+!music/*
